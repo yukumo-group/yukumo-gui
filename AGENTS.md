@@ -31,7 +31,7 @@ The application serves as a graphical interface for the `yukumo-script` library.
 |---|---|
 | `wails.json` | Wails project configuration (name, build commands, author) |
 | `go.mod` / `go.sum` | Go module definition and dependency lock file |
-| `frontend/package.json` | Frontend npm dependencies and scripts |
+| `frontend/package.json` | Frontend pnpm dependencies and scripts |
 | `frontend/vite.config.js` | Vite configuration (Vue plugin) |
 | `.gitignore` | Git ignore rules |
 
@@ -59,7 +59,10 @@ yukumo-script-gui/
 │
 ├── frontend/               # Frontend (Vue 3 + Vite)
 │   ├── index.html          # HTML entry point
-│   ├── package.json        # npm dependencies
+│   ├── package.json        # pnpm dependencies
+│   ├── pnpm-lock.yaml      # pnpm lockfile
+│   ├── pnpm-workspace.yaml # pnpm settings (e.g. allowBuilds)
+│   ├── .npmrc              # pnpm config (shamefully-hoist for Wails)
 │   ├── vite.config.js      # Vite configuration
 │   ├── README.md           # Frontend-specific README
 │   │
@@ -445,16 +448,17 @@ When working on this project, follow these rules:
 - **Do NOT add** JavaScript frameworks or libraries without maintainer approval.
 - **Do NOT fix** missing types, undefined references, or build errors in Go code — notify the maintainer instead.
 
-### ⚠️ Installing npm Modules
-- **Always `cd` into `frontend/` before running any npm command.** The `package.json` lives in `frontend/`, not the project root.
+### ⚠️ Installing pnpm Modules
+- **Always `cd` into `frontend/` before running any pnpm command.** The `package.json` lives in `frontend/`, not the project root.
   ```bash
   # ✅ Correct — install from inside frontend/
-  cd frontend && npm install <package-name>
+  cd frontend && pnpm add <package-name>
   
   # ❌ Wrong — this will fail or install in the wrong place
-  npm install <package-name>   # (from project root)
+  pnpm add <package-name>   # (from project root)
   ```
-- If you accidentally install a package in the project root, delete the `node_modules` and `package-lock.json` created there, then reinstall inside `frontend/`.
+- If you accidentally install a package in the project root, delete the `node_modules` and lockfile created there, then reinstall inside `frontend/`.
+- Use **pnpm** only — do not use npm or yarn (no `package-lock.json` / `yarn.lock`).
 
 ### ⚠️ If You Encounter Issues
 - If you find a bug, missing import, or type error in **Go code**: notify the maintainer — do not fix it yourself.
@@ -477,12 +481,12 @@ When working on this project, follow these rules:
 
 ## 8. Quick Reference
 
-### Available npm Scripts (from `frontend/`)
+### Available pnpm Scripts (from `frontend/`)
 
 ```bash
-npm run dev      # Start Vite dev server
-npm run build    # Build frontend for production
-npm run preview  # Preview production build locally
+pnpm run dev      # Start Vite dev server
+pnpm run build    # Build frontend for production
+pnpm run preview  # Preview production build locally
 ```
 
 ### Available Wails Commands (from project root)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/1Vewton/yukumo-script/utils"
-	"github.com/1Vewton/yukumo-script/utils/logger"
+	"github.com/yukumo-group/yukumo-script/utils"
+	"github.com/yukumo-group/yukumo-script/utils/logger"
 	"github.com/magiconair/properties"
 )
 

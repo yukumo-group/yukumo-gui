@@ -6,9 +6,9 @@ package main
 import (
 	"context"
 
-	"github.com/1Vewton/yukumo-script/example"
-	"github.com/1Vewton/yukumo-script/phontsmanager"
-	"github.com/1Vewton/yukumo-script/utils"
+	"github.com/yukumo-group/yukumo-script/example"
+	"github.com/yukumo-group/yukumo-script/phontsmanager"
+	"github.com/yukumo-group/yukumo-script/utils"
 )
 
 // startup is called when the app starts. The context is saved
