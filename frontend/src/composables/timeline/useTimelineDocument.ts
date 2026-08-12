@@ -8,7 +8,11 @@ import {
   timelinePlayback,
 } from '../timelineSession';
 import { snapTimeToRuler } from '../timelineGrid';
-import type { TimelineClip, TimelineTrack } from '../../types/timeline';
+import {
+  TIMELINE_CLIP_MIN_DURATION_SEC,
+  type TimelineClip,
+  type TimelineTrack,
+} from '../../types/timeline';
 
 function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -29,14 +33,21 @@ export function useTimelineDocument(t: ComposerTranslation) {
   const tracks = ref<TimelineTrack[]>([]);
   const clips = ref<TimelineClip[]>([]);
   let speakerSeq = 0;
+  let phraseSeq = 0;
 
   function nextSpeakerName(): string {
     speakerSeq += 1;
     return t('pages.generate.timeline.speakerName', { n: speakerSeq });
   }
 
+  function nextPhraseLabel(): string {
+    phraseSeq += 1;
+    return t('pages.generate.timeline.phraseLabel', { n: phraseSeq });
+  }
+
   function seedData(): void {
     speakerSeq = 0;
+    phraseSeq = 0;
     tracks.value = [
       createTrack(nextSpeakerName()),
       createTrack(nextSpeakerName()),
@@ -48,28 +59,28 @@ export function useTimelineDocument(t: ComposerTranslation) {
         trackId: a.id,
         startSec: 0.5,
         durationSec: 3.5,
-        label: t('pages.generate.timeline.phraseLabel', { n: 1 }),
+        label: nextPhraseLabel(),
       },
       {
         id: uid('clip'),
         trackId: a.id,
         startSec: 5,
         durationSec: 2.5,
-        label: t('pages.generate.timeline.phraseLabel', { n: 2 }),
+        label: nextPhraseLabel(),
       },
       {
         id: uid('clip'),
         trackId: b.id,
         startSec: 2,
         durationSec: 4,
-        label: t('pages.generate.timeline.phraseLabel', { n: 3 }),
+        label: nextPhraseLabel(),
       },
       {
         id: uid('clip'),
         trackId: b.id,
         startSec: 8,
         durationSec: 3,
-        label: t('pages.generate.timeline.phraseLabel', { n: 4 }),
+        label: nextPhraseLabel(),
       },
     ];
   }
@@ -181,6 +192,53 @@ export function useTimelineDocument(t: ComposerTranslation) {
     }
   }
 
+  function addClip(
+    trackId: string,
+    startSec: number,
+    durationSec: number,
+  ): TimelineClip | null {
+    if (!tracks.value.some((track) => track.id === trackId)) return null;
+    if (durationSec < TIMELINE_CLIP_MIN_DURATION_SEC) return null;
+    const clip: TimelineClip = {
+      id: uid('clip'),
+      trackId,
+      startSec: Math.max(0, startSec),
+      durationSec,
+      label: nextPhraseLabel(),
+    };
+    clips.value.push(clip);
+    return clip;
+  }
+
+  function removeClips(ids: readonly string[]): void {
+    if (ids.length === 0) return;
+    const idSet = new Set(ids);
+    clips.value = clips.value.filter((clip) => !idSet.has(clip.id));
+  }
+
+  function splitClip(clipId: string, atSec: number): TimelineClip | null {
+    const clip = clips.value.find((c) => c.id === clipId);
+    if (!clip) return null;
+    const leftDuration = atSec - clip.startSec;
+    const rightDuration = clip.durationSec - leftDuration;
+    if (
+      leftDuration < TIMELINE_CLIP_MIN_DURATION_SEC ||
+      rightDuration < TIMELINE_CLIP_MIN_DURATION_SEC
+    ) {
+      return null;
+    }
+    clip.durationSec = leftDuration;
+    const right: TimelineClip = {
+      id: uid('clip'),
+      trackId: clip.trackId,
+      startSec: atSec,
+      durationSec: rightDuration,
+      label: nextPhraseLabel(),
+    };
+    clips.value.push(right);
+    return right;
+  }
+
   return {
     tracks,
     clips,
@@ -197,6 +255,9 @@ export function useTimelineDocument(t: ComposerTranslation) {
     setPan,
     applyClipPlacements,
     applyClipRanges,
+    addClip,
+    removeClips,
+    splitClip,
   };
 }
 

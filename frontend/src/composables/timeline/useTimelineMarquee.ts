@@ -3,6 +3,10 @@ import type { TimelineViewport } from '../useTimelineViewport';
 import type { TimelineClip, TimelineTrack } from '../../types/timeline';
 import type { TimelineSelection } from './useTimelineSelection';
 import type { TimelineEdgeScroll } from './useTimelineEdgeScroll';
+import {
+  clientToContentPoint,
+  clipsIntersectingRect,
+} from './timelinePointer';
 
 const MARQUEE_THRESHOLD_PX = 3;
 
@@ -55,43 +59,29 @@ export function useTimelineMarquee(options: {
   ): { x: number; y: number } {
     const el = options.lanesViewportRef.value;
     if (!el) return { x: 0, y: 0 };
-    const rect = el.getBoundingClientRect();
-    return {
-      x: options.viewport.scrollXPx.value + (clientX - rect.left),
-      y: options.viewport.scrollYPx.value + (clientY - rect.top),
-    };
+    const point = clientToContentPoint(
+      el,
+      clientX,
+      clientY,
+      options.viewport.scrollXPx.value,
+      options.viewport.scrollYPx.value,
+    );
+    return { x: point.contentX, y: point.contentY };
   }
 
   function clipsIntersectingMarquee(m: MarqueeState): string[] {
-    const left = Math.min(m.originContentX, m.currentContentX);
-    const right = Math.max(m.originContentX, m.currentContentX);
-    const top = Math.min(m.originContentY, m.currentContentY);
-    const bottom = Math.max(m.originContentY, m.currentContentY);
-    const hit: string[] = [];
-    const { pxPerSec, trackHeightPx } = options.viewport;
-
-    options.tracks.value.forEach((track, index) => {
-      const trackTop = index * trackHeightPx.value;
-      const trackBottom = trackTop + trackHeightPx.value;
-      if (trackBottom < top || trackTop > bottom) return;
-
-      for (const clip of options.clipsForTrack(track.id)) {
-        const clipLeft = clip.startSec * pxPerSec.value;
-        const clipRight = clipLeft + clip.durationSec * pxPerSec.value;
-        const clipTop = trackTop + 4;
-        const clipBottom = trackBottom - 4;
-        if (
-          clipRight >= left &&
-          clipLeft <= right &&
-          clipBottom >= top &&
-          clipTop <= bottom
-        ) {
-          hit.push(clip.id);
-        }
-      }
-    });
-
-    return hit;
+    return clipsIntersectingRect(
+      options.tracks.value,
+      options.clipsForTrack,
+      {
+        left: Math.min(m.originContentX, m.currentContentX),
+        right: Math.max(m.originContentX, m.currentContentX),
+        top: Math.min(m.originContentY, m.currentContentY),
+        bottom: Math.max(m.originContentY, m.currentContentY),
+      },
+      options.viewport.pxPerSec.value,
+      options.viewport.trackHeightPx.value,
+    );
   }
 
   function updateFromPointer(clientX: number, clientY: number): void {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TimelineClip } from '../../types/timeline';
+import type { TimelineClip, TimelineEditMode } from '../../types/timeline';
 import type { ClipResizeEdge } from '../../composables/timeline/useTimelineClipResize';
 import TimelineClipBlock from './TimelineClip.vue';
 
@@ -14,6 +14,7 @@ defineProps<{
   dimmed: boolean;
   previewOffsetY: number;
   isDragging: boolean;
+  editMode: TimelineEditMode;
   clipAriaLabel: (clip: TimelineClip) => string;
 }>();
 
@@ -48,6 +49,7 @@ const emit = defineEmits<{
       :selected="selectedClipIds.has(clip.id)"
       :blocked="blockedClipIds.has(clip.id)"
       :dimmed="dimmed"
+      :editMode="editMode"
       :ariaLabel="clipAriaLabel(clip)"
       @pointer-down="emit('clipPointerDown', clip.id, $event)"
       @resize-pointer-down="

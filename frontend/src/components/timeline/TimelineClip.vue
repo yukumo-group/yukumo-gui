@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue';
-import type { TimelineClip } from '../../types/timeline';
+import type { TimelineClip, TimelineEditMode } from '../../types/timeline';
 import { TIMELINE_CLIP_RESIZE_HANDLE_PX } from '../../types/timeline';
 import type { ClipResizeEdge } from '../../composables/timeline/useTimelineClipResize';
 
@@ -10,6 +10,7 @@ const props = defineProps<{
   selected: boolean;
   dimmed: boolean;
   blocked: boolean;
+  editMode: TimelineEditMode;
   ariaLabel: string;
 }>();
 
@@ -23,8 +24,23 @@ const hoveredEdge = ref<ClipResizeEdge | null>(null);
 const resizingEdge = ref<ClipResizeEdge | null>(null);
 
 const showHandles = computed(
-  () => props.selected || hovered.value || resizingEdge.value !== null,
+  () =>
+    props.editMode === 'select' &&
+    (props.selected || hovered.value || resizingEdge.value !== null),
 );
+
+const bodyCursorClass = computed(() => {
+  switch (props.editMode) {
+    case 'add':
+      return 'cursor-not-allowed';
+    case 'delete':
+      return 'cursor-pointer';
+    case 'split':
+      return 'cursor-col-resize';
+    default:
+      return 'cursor-grab active:cursor-grabbing';
+  }
+});
 
 function handleClass(edge: ClipResizeEdge): string {
   const highlighted =
@@ -49,6 +65,7 @@ function clearResizing(): void {
 }
 
 function onResizePointerDown(edge: ClipResizeEdge, e: PointerEvent): void {
+  if (props.editMode !== 'select') return;
   if (e.button !== 0) return;
   e.preventDefault();
   e.stopPropagation();
@@ -63,11 +80,14 @@ onUnmounted(clearResizing);
 
 <template>
   <div
-    class="absolute top-1 bottom-1 cursor-grab overflow-hidden rounded-md active:cursor-grabbing"
+    class="absolute top-1 bottom-1 overflow-hidden rounded-md"
     :class="[
+      bodyCursorClass,
       blocked
         ? 'border border-danger bg-danger/80'
-        : 'border border-primary/40 bg-primary/25',
+        : editMode === 'delete' && hovered
+          ? 'border border-danger bg-danger/40'
+          : 'border border-primary/40 bg-primary/25',
       selected && !blocked
         ? 'ring-2 ring-primary ring-offset-1 ring-offset-body'
         : '',
@@ -97,6 +117,7 @@ onUnmounted(clearResizing);
     />
 
     <div
+      v-if="editMode === 'select'"
       class="absolute inset-y-0 left-0 z-10 cursor-ew-resize"
       :style="{ width: `${TIMELINE_CLIP_RESIZE_HANDLE_PX}px` }"
       @pointerenter="hoveredEdge = 'left'"
@@ -104,6 +125,7 @@ onUnmounted(clearResizing);
       @pointerdown="onResizePointerDown('left', $event)"
     />
     <div
+      v-if="editMode === 'select'"
       class="absolute inset-y-0 right-0 z-10 cursor-ew-resize"
       :style="{ width: `${TIMELINE_CLIP_RESIZE_HANDLE_PX}px` }"
       @pointerenter="hoveredEdge = 'right'"

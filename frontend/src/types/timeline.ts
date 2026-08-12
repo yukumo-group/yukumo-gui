@@ -17,6 +17,8 @@ export interface TimelineClip {
   label: string;
 }
 
+export type TimelineEditMode = 'select' | 'add' | 'delete' | 'split';
+
 export interface TimelineViewportState {
   pxPerSec: number;
   trackHeightPx: number;
@@ -41,7 +43,7 @@ export const TIMELINE_TRACK_HEIGHT_MAX = 240;
 export const TIMELINE_DEFAULT_PX_PER_SEC = 80;
 export const TIMELINE_DEFAULT_TRACK_HEIGHT = 88;
 /** Initial / never-below project length (seconds). Duration only grows from here. */
-export const TIMELINE_MIN_DURATION_SEC = 30;
+export const TIMELINE_MIN_DURATION_SEC = 15;
 /** Trailing empty time kept past the furthest clip / playhead. */
 export const TIMELINE_DURATION_PAD_SEC = 2;
 export const TIMELINE_RULER_HEIGHT_PX = 28;
