@@ -11,6 +11,9 @@ const zhCN = {
     generate: {
       title: '生成',
       description: '在此工作区中创建并运行 Yukumo 脚本。',
+      editorAriaLabel: '脚本编辑器',
+      editorLoading: '正在加载编辑器…',
+      editorLoadFailed: '编辑器加载失败。',
     },
     profiles: {
       title: '配置文件',

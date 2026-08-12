@@ -11,6 +11,9 @@ const enUS = {
     generate: {
       title: 'Generate',
       description: 'Create and run Yukumo scripts from this workspace.',
+      editorAriaLabel: 'Script editor',
+      editorLoading: 'Loading editor…',
+      editorLoadFailed: 'Failed to load the editor.',
     },
     profiles: {
       title: 'Profiles',

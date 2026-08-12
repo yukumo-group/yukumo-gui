@@ -11,6 +11,9 @@ const jaJP = {
     generate: {
       title: '生成',
       description: 'このワークスペースから Yukumo スクリプトを作成・実行します。',
+      editorAriaLabel: 'スクリプトエディター',
+      editorLoading: 'エディターを読み込み中…',
+      editorLoadFailed: 'エディターの読み込みに失敗しました。',
     },
     profiles: {
       title: 'プロファイル',
