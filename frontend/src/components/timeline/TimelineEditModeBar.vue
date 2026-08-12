@@ -16,6 +16,7 @@ const { t } = useI18n();
 const tools: {
   id: TimelineEditMode;
   icon: typeof MousePointer2;
+  shortcut: string;
   labelKey:
     | 'pages.generate.timeline.editModeSelect'
     | 'pages.generate.timeline.editModeAdd'
@@ -25,21 +26,25 @@ const tools: {
   {
     id: 'select',
     icon: MousePointer2,
+    shortcut: 'q',
     labelKey: 'pages.generate.timeline.editModeSelect',
   },
   {
     id: 'add',
     icon: PenLine,
+    shortcut: 'w',
     labelKey: 'pages.generate.timeline.editModeAdd',
   },
   {
     id: 'delete',
     icon: Trash2,
+    shortcut: 'e',
     labelKey: 'pages.generate.timeline.editModeDelete',
   },
   {
     id: 'split',
     icon: Scissors,
+    shortcut: 'r',
     labelKey: 'pages.generate.timeline.editModeSplit',
   },
 ];
@@ -47,7 +52,7 @@ const tools: {
 
 <template>
   <div
-    class="flex h-full items-center justify-center gap-0.5"
+    class="flex h-full items-center justify-center gap-1"
     role="radiogroup"
     :aria-label="t('pages.generate.timeline.editModeToolbar')"
   >
@@ -60,7 +65,7 @@ const tools: {
       <button
         type="button"
         role="radio"
-        class="inline-flex size-6 items-center justify-center rounded-full transition-colors"
+        class="inline-flex size-8 items-center justify-center rounded-full transition-colors"
         :class="
           modelValue === tool.id
             ? 'bg-primary text-on-primary'
@@ -68,9 +73,10 @@ const tools: {
         "
         :aria-checked="modelValue === tool.id"
         :aria-label="t(tool.labelKey)"
+        :aria-keyshortcuts="tool.shortcut"
         @click="emit('update:modelValue', tool.id)"
       >
-        <component :is="tool.icon" :size="14" aria-hidden="true" />
+        <component :is="tool.icon" :size="16" aria-hidden="true" />
       </button>
     </var-tooltip>
   </div>

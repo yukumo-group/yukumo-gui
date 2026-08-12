@@ -239,6 +239,32 @@ export function useTimelineDocument(t: ComposerTranslation) {
     return right;
   }
 
+  function insertClips(
+    entries: Array<{
+      trackId: string;
+      startSec: number;
+      durationSec: number;
+      label: string;
+    }>,
+  ): TimelineClip[] {
+    const created: TimelineClip[] = [];
+    for (const entry of entries) {
+      if (!tracks.value.some((track) => track.id === entry.trackId)) continue;
+      if (entry.durationSec < TIMELINE_CLIP_MIN_DURATION_SEC) continue;
+      created.push({
+        id: uid('clip'),
+        trackId: entry.trackId,
+        startSec: Math.max(0, entry.startSec),
+        durationSec: entry.durationSec,
+        label: entry.label,
+      });
+    }
+    if (created.length > 0) {
+      clips.value = [...clips.value, ...created];
+    }
+    return created;
+  }
+
   return {
     tracks,
     clips,
@@ -258,6 +284,7 @@ export function useTimelineDocument(t: ComposerTranslation) {
     addClip,
     removeClips,
     splitClip,
+    insertClips,
   };
 }
 

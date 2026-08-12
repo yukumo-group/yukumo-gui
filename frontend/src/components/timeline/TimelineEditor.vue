@@ -11,7 +11,9 @@ import { useTimelineClipResize, type ClipResizeEdge } from '../../composables/ti
 import { useTimelineClipSplit } from '../../composables/timeline/useTimelineClipSplit';
 import { useTimelineDocument } from '../../composables/timeline/useTimelineDocument';
 import { useTimelineEdgeScroll } from '../../composables/timeline/useTimelineEdgeScroll';
+import { useTimelineClipboard } from '../../composables/timeline/useTimelineClipboard';
 import { useTimelineEditMode } from '../../composables/timeline/useTimelineEditMode';
+import { useTimelineHotkeys } from '../../composables/timeline/useTimelineHotkeys';
 import { useTimelineGestures } from '../../composables/timeline/useTimelineGestures';
 import { useTimelineMarquee } from '../../composables/timeline/useTimelineMarquee';
 import { useTimelineRulerScrub } from '../../composables/timeline/useTimelineRulerScrub';
@@ -52,6 +54,7 @@ const {
   addClip,
   removeClips,
   splitClip,
+  insertClips,
 } = useTimelineDocument(t);
 
 /** Fit/min zoom bound — frozen during drag/scrub, committed on gesture end. */
@@ -105,7 +108,7 @@ const {
 
 const selection = useTimelineSelection();
 const { selectedClipIdSet } = selection;
-const { editMode } = useTimelineEditMode();
+const { editMode, setEditMode } = useTimelineEditMode();
 
 const lanesViewportRef = ref<HTMLElement | null>(null);
 const rulerRef = ref<HTMLElement | null>(null);
@@ -317,6 +320,31 @@ watch(editMode, (mode) => {
   }
 });
 
+const { copySelection, pasteAtPlayhead } = useTimelineClipboard({
+  tracks,
+  clips,
+  selection,
+  pxPerSec,
+  insertClips,
+  setEditMode,
+});
+
+function deleteSelection(): boolean {
+  const ids = selection.selectedClipIds.value;
+  if (ids.length === 0) return false;
+  removeClips(ids);
+  selection.clearSelection();
+  return true;
+}
+
+useTimelineHotkeys({
+  editMode,
+  setEditMode,
+  copySelection,
+  pasteAtPlayhead,
+  deleteSelection,
+});
+
 const playheadLeftPx = computed(() =>
   localXAtTime(timelinePlayback.currentTimeSec.value),
 );
@@ -343,29 +371,6 @@ defineExpose({
     ref="rootRef"
     class="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden touch-none select-none"
   >
-    <div
-      class="flex shrink-0"
-      :style="{ height: `${TIMELINE_SCROLLBAR_SIZE_PX}px` }"
-    >
-      <div
-        class="shrink-0 border-b border-outline/20 bg-surface-container"
-        :style="{ width: `${TIMELINE_HEADER_WIDTH_PX}px` }"
-      />
-      <TimelineScrollbar
-        class="min-w-0 flex-1 border-b border-outline/20"
-        orientation="horizontal"
-        :content-size="contentWidthPx"
-        :viewport-size="viewportWidthPx"
-        :scroll="scrollXPx"
-        :ariaLabel="t('pages.generate.timeline.hScrollAriaLabel')"
-        @scroll="setScrollX"
-      />
-      <div
-        class="shrink-0 border-b border-l border-outline/20 bg-surface-container"
-        :style="{ width: `${TIMELINE_SCROLLBAR_SIZE_PX}px` }"
-      />
-    </div>
-
     <div class="flex min-h-0 min-w-0 flex-1">
       <div
         class="flex shrink-0 flex-col overflow-hidden border-r border-outline/30"
@@ -373,7 +378,9 @@ defineExpose({
       >
         <div
           class="flex shrink-0 items-center border-b border-outline/30 px-1"
-          :style="{ height: `${TIMELINE_RULER_HEIGHT_PX}px` }"
+          :style="{
+            height: `${TIMELINE_SCROLLBAR_SIZE_PX + TIMELINE_RULER_HEIGHT_PX}px`,
+          }"
         >
           <TimelineEditModeBar v-model="editMode" />
         </div>
@@ -423,6 +430,24 @@ defineExpose({
       </div>
 
       <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div
+          class="flex shrink-0"
+          :style="{ height: `${TIMELINE_SCROLLBAR_SIZE_PX}px` }"
+        >
+          <TimelineScrollbar
+            class="min-w-0 flex-1 border-b border-outline/20"
+            orientation="horizontal"
+            :content-size="contentWidthPx"
+            :viewport-size="viewportWidthPx"
+            :scroll="scrollXPx"
+            :ariaLabel="t('pages.generate.timeline.hScrollAriaLabel')"
+            @scroll="setScrollX"
+          />
+          <div
+            class="shrink-0 border-b border-l border-outline/20 bg-surface-container"
+            :style="{ width: `${TIMELINE_SCROLLBAR_SIZE_PX}px` }"
+          />
+        </div>
         <div ref="rulerRef">
           <TimelineRuler
             ref="rulerComponentRef"
