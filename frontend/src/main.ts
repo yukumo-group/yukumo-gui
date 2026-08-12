@@ -1,13 +1,12 @@
-/**
- * main.ts — Vue Application Entry Point
- *
- * This file bootstraps the Vue 3 application and mounts it to the DOM.
- * It imports the root component (App.vue) and global styles.
- */
-
 import { createApp } from 'vue';
+import { StyleProvider, Themes } from '@varlet/ui';
+import Varlet from '@varlet/ui';
+import '@varlet/ui/es/style';
+import '@varlet/touch-emulator';
+
 import App from './App.vue';
+import router from './router';
 import './style.css';
 
-// Create the Vue application instance and mount it to the #app element
-createApp(App).mount('#app');
+StyleProvider(Themes.md3Light);
+createApp(App).use(Varlet).use(router).mount('#app');

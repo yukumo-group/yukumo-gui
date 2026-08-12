@@ -4,12 +4,21 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "strict": true,
     "noEmit": true,
+    "moduleResolution": "Bundler",
+    "rootDir": ".",
     "types": ["vite/client"]
   },
   "include": [
     "env.d.ts",
+    "typed-router.d.ts",
     "src/**/*",
     "src/**/*.vue",
     "wailsjs/**/*"
-  ]
+  ],
+  "vueCompilerOptions": {
+    "plugins": [
+      "vue-router/volar/sfc-route-blocks",
+      "vue-router/volar/sfc-typed-router"
+    ]
+  }
 }
