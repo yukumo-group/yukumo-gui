@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 /**
  * HelloWorld.vue — Example Interactive Component
  *
- * This component demonstrates the Wails Go ↔ JavaScript bridge by:
+ * This component demonstrates the Wails Go ↔ TypeScript bridge by:
  * 1. Taking user input from a text field
  * 2. Calling the Go backend method `Greet()` via the auto-generated bridge
  * 3. Displaying the returned greeting message
@@ -12,12 +12,19 @@ import { reactive } from 'vue';
 import { Greet } from '../../wailsjs/go/main/App';
 
 /**
- * Reactive application data.
- *
- * @property {string} name       - The user-provided name input
- * @property {string} resultText - The greeting message returned from the Go backend
+ * Shape of the reactive form state used by this component.
  */
-const data = reactive({
+interface HelloWorldData {
+  /** The user-provided name input */
+  name: string;
+  /** The greeting message returned from the Go backend */
+  resultText: string;
+}
+
+/**
+ * Reactive application data for the greet form.
+ */
+const data = reactive<HelloWorldData>({
   name: '',
   resultText: 'Please enter your name below 👇',
 });
@@ -28,8 +35,8 @@ const data = reactive({
  *
  * This function is triggered when the user clicks the "Greet" button.
  */
-function greet() {
-  Greet(data.name).then((result) => {
+function greet(): void {
+  Greet(data.name).then((result: string) => {
     data.resultText = result;
   });
 }

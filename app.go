@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/yukumo-group/yukumo-script/utils"
-	"github.com/yukumo-group/yukumo-script/utils/logger"
 	"github.com/magiconair/properties"
+	"github.com/yukumo-group/yukumo-script/pkg/example"
+	"github.com/yukumo-group/yukumo-script/pkg/phontsmanager"
+	"github.com/yukumo-group/yukumo-script/pkg/utils"
+	"github.com/yukumo-group/yukumo-script/pkg/utils/logger"
 )
 
 var guiLogger = logger.NewLogger(
@@ -39,6 +41,35 @@ func NewApp() *App {
 	return &App{
 		engTexts: pEn,
 	}
+}
+
+// startup is called when the app starts. The context is saved
+// so we can call the runtime methods
+func (a *App) startup(ctx context.Context) {
+	utils.InitializeDirectory(utils.PhontsDir)
+	utils.InitializeDirectory(utils.ResultDir)
+	utils.InitializeDirectory(utils.WavsDir)
+	utils.InitializeDirectory(utils.DataDir)
+	utils.InitializeDirectory(utils.ExampleDir)
+	utils.InitializeDirectory(utils.ImagesDir)
+	dir, err := phontsmanager.GetAllPhonts(
+		utils.PhontsDir,
+	)
+	if err != nil {
+		guiLogger.Error(err.Error())
+		panic(err.Error())
+	}
+	err = example.GenerateExamples(
+		ctx,
+		utils.ExampleDir,
+		utils.PhontsDir,
+		dir,
+	)
+	if err != nil {
+		guiLogger.Error(err.Error())
+		panic(err.Error())
+	}
+	a.ctx = ctx
 }
 
 // Greet returns a greeting for the given name

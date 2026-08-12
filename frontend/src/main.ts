@@ -1,5 +1,5 @@
 /**
- * main.js — Vue Application Entry Point
+ * main.ts — Vue Application Entry Point
  *
  * This file bootstraps the Vue 3 application and mounts it to the DOM.
  * It imports the root component (App.vue) and global styles.
