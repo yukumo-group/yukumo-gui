@@ -152,7 +152,7 @@ async function onResetClick(): Promise<void> {
 </script>
 
 <template>
-  <section class="flex w-full max-w-3xl flex-col gap-4 text-left">
+  <section class="flex w-full max-w-3xl flex-col gap-4 px-6 pt-8 text-left sm:px-6">
     <header class="flex flex-col gap-1">
       <h1 class="font-bold tracking-wide text-text text-3xl">
         {{ t('pages.settings.title') }}
@@ -304,7 +304,7 @@ async function onResetClick(): Promise<void> {
         @click="openHelp"
       >
         <template #icon>
-          <component :is="helpDestination.icon" :size="22" />
+          <component :is="helpDestination.icon" class="mr-2" />
         </template>
         <template #extra>
           <ChevronRight :size="20" />

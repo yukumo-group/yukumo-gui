@@ -72,9 +72,9 @@ export function buildThemeVars(
 
   if (mode === 'light') {
     // Inverted surface hierarchy (lower → more tinted; higher → brighter).
-    setRole(vars, 'body', neutral.tone(94));
+    setRole(vars, 'body', neutral.tone(90));
     setRole(vars, 'surface-container-low', neutral.tone(98));
-    setRole(vars, 'surface-container', neutral.tone(96));
+    setRole(vars, 'surface-container', neutral.tone(98));
     setRole(vars, 'surface-container-high', neutral.tone(99));
     setRole(vars, 'surface-container-highest', neutral.tone(100));
     Object.assign(vars, LIGHT_SOFT_SHADOWS);

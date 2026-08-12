@@ -30,7 +30,7 @@ const active = computed<string>({
 
 <template>
   <aside
-    class="relative z-20 hidden h-full shrink-0 sm:flex flex-col shadow-md"
+    class="rail-chrome relative z-20 hidden h-full shrink-0 sm:flex flex-col"
     :aria-label="t('nav.mainAriaLabel')"
   >
     <var-rail-navigation
@@ -83,6 +83,10 @@ const active = computed<string>({
 </template>
 
 <style scoped>
+.rail-chrome {
+  background-color: var(--rail-navigation-background);
+}
+
 :deep(.var-rail-navigation-item) {
   min-height: auto;
 }

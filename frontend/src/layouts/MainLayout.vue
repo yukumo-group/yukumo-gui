@@ -2,30 +2,38 @@
 import { RouterView } from 'vue-router';
 import AppRailNav from '../components/navigation/AppRailNav.vue';
 import AppBottomNav from '../components/navigation/AppBottomNav.vue';
-import backgroundImage from '../assets/images/background.webp';
 </script>
 
 <template>
   <div
-    class="relative flex h-screen w-screen flex-col overflow-hidden bg-cover bg-center bg-no-repeat sm:flex-row"
+    class="layout-chrome relative flex h-screen w-screen flex-col overflow-hidden sm:flex-row"
   >
-    <div
-      class="pointer-events-none absolute inset-0 z-0 bg-body"
-      aria-hidden="true"
-    />
-
     <AppRailNav />
 
     <main
-      class="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-y-auto px-4 py-6 sm:px-8 sm:py-8"
+      class="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0 sm:p-1"
     >
-      <RouterView v-slot="{ Component, route }">
-        <Transition name="page">
-          <component :is="Component" :key="route.path" />
-        </Transition>
-      </RouterView>
+      <div
+        class="flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-hidden rounded-none bg-body p-0 sm:rounded-2xl sm:p-2"
+      >
+        <div
+          class="flex min-h-0 w-full min-w-0 flex-1 flex-col items-center overflow-x-hidden overflow-y-auto"
+        >
+          <RouterView v-slot="{ Component, route }">
+            <Transition name="page">
+              <component :is="Component" :key="route.path" />
+            </Transition>
+          </RouterView>
+        </div>
+      </div>
     </main>
 
     <AppBottomNav />
   </div>
 </template>
+
+<style scoped>
+.layout-chrome {
+  background-color: var(--rail-navigation-background);
+}
+</style>
