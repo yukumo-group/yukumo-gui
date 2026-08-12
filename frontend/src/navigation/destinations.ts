@@ -9,37 +9,37 @@ import {
 
 export interface NavDestination {
   path: string;
-  label: string;
+  labelKey: string;
   icon: Component;
 }
 
 export const primaryDestinations: NavDestination[] = [
   {
     path: '/',
-    label: 'Generate',
+    labelKey: 'nav.generate',
     icon: Sparkles,
   },
   {
     path: '/profiles',
-    label: 'Profiles',
+    labelKey: 'nav.profiles',
     icon: Users,
   },
   {
     path: '/utilities',
-    label: 'Utilities',
+    labelKey: 'nav.utilities',
     icon: Wrench,
   },
 ];
 
 export const helpDestination: NavDestination = {
   path: '/help',
-  label: 'Help',
+  labelKey: 'nav.help',
   icon: CircleHelp,
 };
 
 export const settingsDestination: NavDestination = {
   path: '/settings',
-  label: 'Settings',
+  labelKey: 'nav.settings',
   icon: Settings,
 };
 

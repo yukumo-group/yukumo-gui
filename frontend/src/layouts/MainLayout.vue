@@ -10,14 +10,14 @@ import backgroundImage from '../assets/images/background.webp';
     class="relative flex h-screen w-screen flex-col overflow-hidden bg-cover bg-center bg-no-repeat sm:flex-row"
   >
     <div
-      class="pointer-events-none absolute inset-0 z-0 bg-white/70"
+      class="pointer-events-none absolute inset-0 z-0 bg-body"
       aria-hidden="true"
     />
 
     <AppRailNav />
 
     <main
-      class="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-8 sm:py-8"
+      class="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-y-auto px-4 py-6 sm:px-8 sm:py-8"
     >
       <RouterView v-slot="{ Component, route }">
         <Transition name="page">

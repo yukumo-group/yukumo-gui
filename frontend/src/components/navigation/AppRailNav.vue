@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import {
   helpDestination,
@@ -7,7 +8,9 @@ import {
   settingsDestination,
 } from '../../navigation/destinations';
 import NavIcon from './NavIcon.vue';
+import NavLabel from './NavLabel.vue';
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -27,38 +30,50 @@ const active = computed<string>({
 
 <template>
   <aside
-    class="relative z-20 hidden h-full shrink-0 sm:flex flex-col"
-    aria-label="Main navigation"
+    class="relative z-20 hidden h-full shrink-0 sm:flex flex-col shadow-md"
+    :aria-label="t('nav.mainAriaLabel')"
   >
     <var-rail-navigation
       v-model:active="active"
       :show-label="true"
       class="h-full"
     >
-      <var-rail-navigation-item
-        v-for="destination in mainDestinations"
-        :key="destination.path"
-        :name="destination.path"
-        :label="destination.label"
+      <var-tooltip
+        v-for="destination in mainDestinations" 
+        :key="destination.path" 
+        :content="t(destination.labelKey)"
+        :disabled="active === destination.path"
+        placement="right"
       >
-        <template #icon>
-          <NavIcon
-            :icon="destination.icon"
-            :active="active === destination.path"
-          />
-        </template>
-      </var-rail-navigation-item>
+        <var-rail-navigation-item :name="destination.path">
+          <template #icon>
+            <NavIcon
+              :icon="destination.icon"
+              :active="active === destination.path"
+            />
+          </template>
+          <template #default="{ active: itemActive }">
+            <NavLabel
+              :active="itemActive"
+              :text="t(destination.labelKey)"
+            />
+          </template>
+        </var-rail-navigation-item>
+      </var-tooltip>
 
       <template #end>
-        <var-rail-navigation-item
-          :name="settingsDestination.path"
-          :label="settingsDestination.label"
-        >
+        <var-rail-navigation-item :name="settingsDestination.path">
           <template #icon>
             <NavIcon
               :icon="settingsDestination.icon"
               :active="active === settingsDestination.path"
               variant="settings"
+            />
+          </template>
+          <template #default="{ active: itemActive }">
+            <NavLabel
+              :active="itemActive"
+              :text="t(settingsDestination.labelKey)"
             />
           </template>
         </var-rail-navigation-item>
@@ -68,7 +83,12 @@ const active = computed<string>({
 </template>
 
 <style scoped>
-:deep(.var-rail-navigation-item--active .var-rail-navigation-item__label) {
-  font-weight: 600;
+:deep(.var-rail-navigation-item) {
+  min-height: auto;
+}
+:deep(.var-rail-navigation-item__label) {
+  margin-top: 0;
+  display: block;
+  max-width: 100%;
 }
 </style>

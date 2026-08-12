@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 </script>
 
 <template>
   <section class="flex w-full max-w-3xl flex-col gap-2 text-left">
-    <h1 class="font-bold tracking-wide text-[var(--color-text)] text-3xl">
-      Generate
+    <h1 class="font-bold tracking-wide text-text text-3xl">
+      {{ t('pages.generate.title') }}
     </h1>
-    <p class="leading-relaxed text-[var(--color-text)] opacity-70 text-base">
-      Create and run Yukumo scripts from this workspace.
+    <p class="leading-relaxed text-text opacity-70 text-base">
+      {{ t('pages.generate.description') }}
     </p>
   </section>
 </template>

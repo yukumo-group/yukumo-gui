@@ -28,6 +28,7 @@ The application serves as a graphical interface for the `yukumo-script` library.
 | `vue-router` | ^5.0.0 | File-based routing (hash history for Wails) |
 | `@varlet/ui` | ^3.20.0 | Material Design 3 Vue component library |
 | `@lucide/vue` | ^1.0.0 | Tree-shakable Lucide icons for Vue |
+| `vue-i18n` | ^11.0.0 | Application UI internationalization (EN / JA / zh-CN) |
 | `github.com/1Vewton/yukumo-script` | local (`../`) | Core Yukumo script library (Go) |
 
 ### Project Configuration Files
@@ -82,8 +83,12 @@ yukumo-script-gui/
 │   │   ├── style.css       # Global styles
 │   │   ├── router/         # Vue Router (file-based auto-routes)
 │   │   ├── pages/          # File-based route pages
-│   │   ├── navigation/     # Shared nav destination lists
+│   │   ├── navigation/     # Shared nav destination lists (label keys, not raw text)
 │   │   ├── layouts/        # Shared shells (e.g. MainLayout)
+│   │   ├── theme/          # MD3 theme preference + StyleProvider
+│   │   ├── i18n/           # vue-i18n setup + locale message catalogs
+│   │   │   ├── index.ts    # createI18n, setLocale, Varlet Locale sync
+│   │   │   └── messages/   # en-US.ts, ja-JP.ts, zh-CN.ts
 │   │   │
 │   │   ├── assets/         # Static assets
 │   │   │   ├── fonts/      # Custom fonts (e.g., Nunito)
@@ -189,25 +194,79 @@ All **TypeScript / Vue frontend code** must follow these rules:
 6. **Imports**: Group imports logically — Vue core first, then project components, then Wails bindings. Prefer `import type` for type-only imports.
 7. **Template organization**: Keep templates clean and well-indented; extract complex logic into computed properties or methods.
 8. **TypeScript version**: Stay on TypeScript 6 (`typescript@^6`) so `vue-tsc` can type-check Vue SFCs. Do not upgrade to TypeScript 7 until `vue-tsc` supports its programmatic API.
+9. **Varlet Tailwind color utilities**: The project uses `@varlet/preset-tailwindcss`. Map `--color-*` tokens to preset utilities — never write arbitrary `-[var(--color-…)]` classes in templates.
+
+   | Token | Prefer | Avoid |
+   |---|---|---|
+   | `--color-text` | `text-text`, `bg-text`, `border-text` | `text-[var(--color-text)]` |
+   | `--color-on-surface-variant` | `text-on-surface-variant`, `border-on-surface-variant` | `border-[var(--color-on-surface-variant)]` |
+   | `--color-body` | `bg-body` | `bg-[var(--color-body)]` |
+   | `--color-primary` | `text-primary`, `bg-primary` | `text-[var(--color-primary)]` |
+   | `--color-surface-container` | `bg-surface-container` | `bg-[var(--color-surface-container)]` |
+
+   Same pattern for other preset colors (`outline`, `danger`, `surface-container-high`, …). Raw `var(--color-*)` is fine in plain CSS (e.g. `style.css`), but Tailwind class names must use the preset utilities.
 
 ### 4.2. Entry Point: `frontend/src/main.ts`
 
 ```typescript
 import { createApp } from 'vue';
-import { StyleProvider, Themes } from '@varlet/ui';
 import Varlet from '@varlet/ui';
 import '@varlet/ui/es/style';
 import '@varlet/touch-emulator';
 
 import App from './App.vue';
 import router from './router';
+import { i18n, initI18n } from './i18n';
+import { initTheme } from './theme/theme';
 import './style.css';
 
-StyleProvider(Themes.md3Light);
-createApp(App).use(Varlet).use(router).mount('#app');
+initTheme();
+initI18n();
+createApp(App).use(Varlet).use(i18n).use(router).mount('#app');
 ```
 
-### 4.3. Root Component: `frontend/src/App.vue`
+### 4.3. Internationalization (i18n)
+
+Supported locales: **`en-US`**, **`ja-JP`**, **`zh-CN`**.
+
+| Layer | Responsibility |
+|---|---|
+| `vue-i18n` (`frontend/src/i18n/`) | All application UI copy (pages, nav labels, settings, aria-labels) |
+| Varlet `Locale` API | Built-in Varlet component strings (dialogs, pickers, etc.) — see [Varlet Locale](https://varletjs.org/#/zh-CN/locale) |
+
+Locale preference is persisted in `localStorage` (`yukumo-locale`) and synced to:
+1. `i18n.global.locale`
+2. `Locale.use(...)` for Varlet
+3. `document.documentElement.lang`
+
+#### Rules for agents (mandatory)
+
+1. **Never hardcode user-visible UI strings** in templates or TS (titles, labels, descriptions, button text, aria-labels, empty states, errors shown to users).
+2. Use `useI18n()` / `t('key.path')` in Vue SFCs. Prefer nested keys that mirror UI structure (`pages.settings.appearance.title`).
+3. When adding or changing copy, update **all three** message files in the same change:
+   - `frontend/src/i18n/messages/en-US.ts`
+   - `frontend/src/i18n/messages/ja-JP.ts`
+   - `frontend/src/i18n/messages/zh-CN.ts`
+4. Keep message object **keys and nesting identical** across the three locale files. English is the structural source of truth.
+5. Navigation destinations store `labelKey` strings (not translated text). Components call `t(destination.labelKey)`.
+6. Changing language at runtime must go through `setLocale()` from `frontend/src/i18n/index.ts` so vue-i18n and Varlet stay in sync. Do not call `Locale.use` or mutate `i18n.global.locale` ad hoc from feature code.
+7. Do not invent new locale codes unless the maintainer asks. Supported set is only `en-US` / `ja-JP` / `zh-CN`.
+
+#### Example
+
+```vue
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+</script>
+
+<template>
+  <h1>{{ t('pages.generate.title') }}</h1>
+</template>
+```
+
+### 4.4. Root Component: `frontend/src/App.vue`
 
 ```vue
 <script setup lang="ts">
@@ -219,7 +278,7 @@ import { RouterView } from 'vue-router';
 </template>
 ```
 
-### 4.4. Example: Calling a Go Binding from a Vue Component
+### 4.5. Example: Calling a Go Binding from a Vue Component
 
 ```vue
 <script setup lang="ts">
@@ -301,7 +360,7 @@ function greet(): void {
 </style>
 ```
 
-### 4.5. Global Styles: `frontend/src/style.css`
+### 4.6. Global Styles: `frontend/src/style.css`
 
 ```css
 @import 'tailwindcss';
@@ -350,7 +409,7 @@ body {
 }
 ```
 
-### 4.6. Build Configuration: `frontend/vite.config.ts`
+### 4.7. Build Configuration: `frontend/vite.config.ts`
 
 ```typescript
 import { defineConfig } from 'vite';
@@ -399,6 +458,8 @@ When working on this project, follow these rules:
 - Follow the **TypeScript coding conventions** defined in Section 4.1.
 - Comment only non-obvious intent; keep comments sparse and short (see Section 4.1).
 - Use **Vue 3 Composition API** with `<script setup lang="ts">` for all Vue components.
+- Route **all user-visible UI text** through `vue-i18n` (`t('...')`) and keep `en-US` / `ja-JP` / `zh-CN` message files in sync (see Section 4.3).
+- Use **Varlet Tailwind color utilities** (`text-text`, `border-on-surface-variant`, `bg-body`, …) instead of arbitrary `-[var(--color-…)]` classes (see Section 4.1 §9).
 - Ask for clarification if a task is ambiguous.
 
 ### ❌ Do NOT
@@ -409,7 +470,9 @@ When working on this project, follow these rules:
 - **Do NOT add** TypeScript/JavaScript frameworks or libraries without maintainer approval.
 - **Do NOT upgrade** to TypeScript 7 while `vue-tsc` still requires the TypeScript 6 API.
 - **Do NOT fix** missing types, undefined references, or build errors in Go code — notify the maintainer instead.
-
+- **Do NOT hardcode** UI strings in components/pages; add keys to all three locale catalogs instead.
+- **Do NOT** change locale by calling Varlet `Locale.use` or mutating `i18n.global.locale` directly — use `setLocale()`.
+- **Do NOT** write Tailwind classes like `text-[var(--color-text)]` or `border-[var(--color-on-surface-variant)]` — use `text-text` / `border-on-surface-variant` from `@varlet/preset-tailwindcss`.
 ### ⚠️ Installing pnpm Modules
 - **Always `cd` into `frontend/` before running any pnpm command.** The `package.json` lives in `frontend/`, not the project root.
   ```bash
@@ -436,6 +499,7 @@ When working on this project, follow these rules:
 | Go backend (`yukumo-script` module) | Maintained as a separate module (`../`). Contact maintainer for issues. |
 | Wails framework version | v2.13.0 — check [wails.io](https://wails.io) for upgrade guides. |
 | Vue 3 version | ^3.5.0 — uses `<script setup lang="ts">` SFC syntax. |
+| vue-i18n | ^11.0.0 — Composition API mode (`legacy: false`); locales `en-US` / `ja-JP` / `zh-CN`. |
 | TypeScript version | ^6.0.0 — required for `vue-tsc` SFC type-checking. |
 | Vite version | ^7.0.0 — uses `@vitejs/plugin-vue` v6. |
 | Go version | 1.25.0 (go.mod) |

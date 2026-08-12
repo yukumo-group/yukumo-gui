@@ -1,12 +1,14 @@
 import { createApp } from 'vue';
-import { StyleProvider, Themes } from '@varlet/ui';
 import Varlet from '@varlet/ui';
 import '@varlet/ui/es/style';
 import '@varlet/touch-emulator';
 
 import App from './App.vue';
 import router from './router';
+import { i18n, initI18n } from './i18n';
+import { initTheme } from './theme/theme';
 import './style.css';
 
-StyleProvider(Themes.md3Light);
-createApp(App).use(Varlet).use(router).mount('#app');
+initTheme();
+initI18n();
+createApp(App).use(Varlet).use(i18n).use(router).mount('#app');

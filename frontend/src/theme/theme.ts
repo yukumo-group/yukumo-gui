@@ -1,5 +1,7 @@
-import { computed, onScopeDispose, ref, type Ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import { StyleProvider, Themes } from '@varlet/ui';
+import { md3Light } from './md3Light';
+import { themeOverrides } from './overrides';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
@@ -14,8 +16,6 @@ const STORAGE_KEY = 'yukumo-theme-preference';
 const preference: Ref<ThemePreference> = ref(readStoredPreference());
 const systemDark = ref(getSystemPrefersDark());
 
-let mediaQuery: MediaQueryList | null = null;
-let mediaListener: ((event: MediaQueryListEvent) => void) | null = null;
 let initialized = false;
 
 export const themePreference = computed(() => preference.value);
@@ -31,31 +31,16 @@ export function initTheme(): void {
   }
   initialized = true;
 
-  mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   systemDark.value = mediaQuery.matches;
-  mediaListener = (event: MediaQueryListEvent) => {
+  mediaQuery.addEventListener('change', (event: MediaQueryListEvent) => {
     systemDark.value = event.matches;
     if (preference.value === 'system') {
       applyResolvedTheme(resolveTheme('system', event.matches));
     }
-  };
-  mediaQuery.addEventListener('change', mediaListener);
-
-  applyResolvedTheme(resolvedTheme.value);
-}
-
-export function useTheme() {
-  initTheme();
-
-  onScopeDispose(() => {
-    // Keep the global media listener for the app lifetime.
   });
 
-  return {
-    preference: themePreference,
-    resolved: resolvedTheme,
-    setPreference,
-  };
+  applyResolvedTheme(resolvedTheme.value);
 }
 
 export async function setPreference(
@@ -91,7 +76,9 @@ function resolveTheme(
 }
 
 function applyResolvedTheme(theme: ResolvedTheme): void {
-  StyleProvider(theme === 'dark' ? Themes.md3Dark : Themes.md3Light);
+  StyleProvider(
+    theme === 'dark' ? { ...Themes.md3Dark, ...themeOverrides } : md3Light,
+  );
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 }

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { bottomDestinations } from '../../navigation/destinations';
 import NavIcon from './NavIcon.vue';
+import NavLabel from './NavLabel.vue';
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -26,7 +29,7 @@ const active = computed<string>({
 <template>
   <nav
     class="relative z-20 shrink-0 sm:hidden"
-    aria-label="Main navigation"
+    :aria-label="t('nav.mainAriaLabel')"
   >
     <var-bottom-navigation
       variant
@@ -38,7 +41,6 @@ const active = computed<string>({
         v-for="destination in bottomDestinations"
         :key="destination.path"
         :name="destination.path"
-        :label="destination.label"
       >
         <template #icon>
           <NavIcon
@@ -47,6 +49,11 @@ const active = computed<string>({
             :variant="destination.path === '/settings' ? 'settings' : 'default'"
           />
         </template>
+        <NavLabel
+          :active="active === destination.path"
+          :text="t(destination.labelKey)"
+          :gap="6"
+        />
       </var-bottom-navigation-item>
     </var-bottom-navigation>
   </nav>
@@ -56,10 +63,12 @@ const active = computed<string>({
 :deep(.var-bottom-navigation-item .var-ripple) {
   display: none;
 }
-:deep(.var-bottom-navigation-item .var-bottom-navigation-item__label) {
-  font-size: 12px;
+:deep(.var-bottom-navigation-item) {
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
-:deep(.var-bottom-navigation-item--active .var-bottom-navigation-item__label) {
-  font-weight: 600;
+:deep(.var-bottom-navigation-item__label) {
+  margin-top: 0;
+  display: block;
 }
 </style>
