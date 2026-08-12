@@ -1,7 +1,10 @@
 import { computed, ref, type Ref } from 'vue';
-import { StyleProvider, Themes } from '@varlet/ui';
-import { md3Light } from './md3Light';
-import { themeOverrides } from './overrides';
+import { StyleProvider } from '@varlet/ui';
+import {
+  DEFAULT_THEME_HUE,
+  buildThemeVars,
+  normalizeHue,
+} from './dynamicColor';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
@@ -11,14 +14,17 @@ export interface ThemePointer {
   y: number;
 }
 
-const STORAGE_KEY = 'yukumo-theme-preference';
+const PREFERENCE_STORAGE_KEY = 'yukumo-theme-preference';
+const HUE_STORAGE_KEY = 'yukumo-theme-hue';
 
 const preference: Ref<ThemePreference> = ref(readStoredPreference());
+const hue: Ref<number> = ref(readStoredHue());
 const systemDark = ref(getSystemPrefersDark());
 
 let initialized = false;
 
 export const themePreference = computed(() => preference.value);
+export const themeHue = computed(() => hue.value);
 
 export const resolvedTheme = computed<ResolvedTheme>(() =>
   resolveTheme(preference.value, systemDark.value),
@@ -26,7 +32,7 @@ export const resolvedTheme = computed<ResolvedTheme>(() =>
 
 export function initTheme(): void {
   if (initialized) {
-    applyResolvedTheme(resolvedTheme.value);
+    applyResolvedTheme(resolvedTheme.value, hue.value);
     return;
   }
   initialized = true;
@@ -36,11 +42,11 @@ export function initTheme(): void {
   mediaQuery.addEventListener('change', (event: MediaQueryListEvent) => {
     systemDark.value = event.matches;
     if (preference.value === 'system') {
-      applyResolvedTheme(resolveTheme('system', event.matches));
+      applyResolvedTheme(resolveTheme('system', event.matches), hue.value);
     }
   });
 
-  applyResolvedTheme(resolvedTheme.value);
+  applyResolvedTheme(resolvedTheme.value, hue.value);
 }
 
 export async function setPreference(
@@ -65,6 +71,16 @@ export async function setPreference(
   syncWindowTheme(next);
 }
 
+export function setHue(next: number): void {
+  const normalized = normalizeHue(next);
+  if (normalized === hue.value) {
+    return;
+  }
+  hue.value = normalized;
+  writeStoredHue(normalized);
+  applyResolvedTheme(resolvedTheme.value, normalized);
+}
+
 function resolveTheme(
   mode: ThemePreference,
   prefersDark: boolean,
@@ -75,10 +91,8 @@ function resolveTheme(
   return mode;
 }
 
-function applyResolvedTheme(theme: ResolvedTheme): void {
-  StyleProvider(
-    theme === 'dark' ? { ...Themes.md3Dark, ...themeOverrides } : md3Light,
-  );
+function applyResolvedTheme(theme: ResolvedTheme, themeHueValue: number): void {
+  StyleProvider(buildThemeVars(themeHueValue, theme));
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 }
@@ -93,7 +107,7 @@ async function transitionTheme(
   const startViewTransition = document.startViewTransition?.bind(document);
 
   if (!startViewTransition || reducedMotion) {
-    applyResolvedTheme(theme);
+    applyResolvedTheme(theme, hue.value);
     return;
   }
 
@@ -112,7 +126,7 @@ async function transitionTheme(
 
   try {
     const transition = startViewTransition(() => {
-      applyResolvedTheme(theme);
+      applyResolvedTheme(theme, hue.value);
     });
     await transition.finished;
   } finally {
@@ -164,7 +178,7 @@ function readStoredPreference(): ThemePreference {
   if (typeof window === 'undefined') {
     return 'system';
   }
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = window.localStorage.getItem(PREFERENCE_STORAGE_KEY);
   if (stored === 'light' || stored === 'dark' || stored === 'system') {
     return stored;
   }
@@ -172,5 +186,20 @@ function readStoredPreference(): ThemePreference {
 }
 
 function writeStoredPreference(mode: ThemePreference): void {
-  window.localStorage.setItem(STORAGE_KEY, mode);
+  window.localStorage.setItem(PREFERENCE_STORAGE_KEY, mode);
+}
+
+function readStoredHue(): number {
+  if (typeof window === 'undefined') {
+    return DEFAULT_THEME_HUE;
+  }
+  const stored = window.localStorage.getItem(HUE_STORAGE_KEY);
+  if (stored === null) {
+    return DEFAULT_THEME_HUE;
+  }
+  return normalizeHue(Number(stored));
+}
+
+function writeStoredHue(value: number): void {
+  window.localStorage.setItem(HUE_STORAGE_KEY, String(value));
 }

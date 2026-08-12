@@ -34,6 +34,12 @@ const zhCN = {
         dark: '深色',
         system: '系统',
       },
+      accentColor: {
+        title: '强调色',
+        description: '为 Material You 浅色与深色主题选择色相。',
+        ariaLabel: '强调色色相',
+        toggleSlider: '显示或隐藏强调色滑块',
+      },
       language: {
         title: '语言',
         description: '选择界面语言。',

@@ -34,6 +34,12 @@ const jaJP = {
         dark: 'ダーク',
         system: 'システム',
       },
+      accentColor: {
+        title: 'アクセントカラー',
+        description: 'Material You のライト／ダーク用の色相を選びます。',
+        ariaLabel: 'アクセントカラーの色相',
+        toggleSlider: 'アクセントカラーのスライダーを表示または非表示',
+      },
       language: {
         title: '言語',
         description: 'インターフェースの言語を選択します。',

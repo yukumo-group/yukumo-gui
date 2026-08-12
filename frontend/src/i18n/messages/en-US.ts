@@ -34,6 +34,12 @@ const enUS = {
         dark: 'Dark',
         system: 'System',
       },
+      accentColor: {
+        title: 'Accent color',
+        description: 'Pick a hue for Material You light and dark themes.',
+        ariaLabel: 'Accent color hue',
+        toggleSlider: 'Show or hide accent color slider',
+      },
       language: {
         title: 'Language',
         description: 'Choose the interface language.',
