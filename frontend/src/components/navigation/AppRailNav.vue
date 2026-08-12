@@ -6,6 +6,7 @@ import {
   primaryDestinations,
   settingsDestination,
 } from '../../navigation/destinations';
+import NavIcon from './NavIcon.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -41,7 +42,10 @@ const active = computed<string>({
         :label="destination.label"
       >
         <template #icon>
-          <component :is="destination.icon" />
+          <NavIcon
+            :icon="destination.icon"
+            :active="active === destination.path"
+          />
         </template>
       </var-rail-navigation-item>
 
@@ -51,10 +55,20 @@ const active = computed<string>({
           :label="settingsDestination.label"
         >
           <template #icon>
-            <component :is="settingsDestination.icon" />
+            <NavIcon
+              :icon="settingsDestination.icon"
+              :active="active === settingsDestination.path"
+              variant="settings"
+            />
           </template>
         </var-rail-navigation-item>
       </template>
     </var-rail-navigation>
   </aside>
 </template>
+
+<style scoped>
+:deep(.var-rail-navigation-item--active .var-rail-navigation-item__label) {
+  font-weight: 600;
+}
+</style>

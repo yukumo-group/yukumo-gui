@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { bottomDestinations } from '../../navigation/destinations';
+import NavIcon from './NavIcon.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -40,7 +41,11 @@ const active = computed<string>({
         :label="destination.label"
       >
         <template #icon>
-          <component :is="destination.icon" />
+          <NavIcon
+            :icon="destination.icon"
+            :active="active === destination.path"
+            :variant="destination.path === '/settings' ? 'settings' : 'default'"
+          />
         </template>
       </var-bottom-navigation-item>
     </var-bottom-navigation>
@@ -53,5 +58,8 @@ const active = computed<string>({
 }
 :deep(.var-bottom-navigation-item .var-bottom-navigation-item__label) {
   font-size: 12px;
+}
+:deep(.var-bottom-navigation-item--active .var-bottom-navigation-item__label) {
+  font-weight: 600;
 }
 </style>

@@ -19,7 +19,11 @@ import backgroundImage from '../assets/images/background.webp';
     <main
       class="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-8 sm:py-8"
     >
-      <RouterView />
+      <RouterView v-slot="{ Component, route }">
+        <Transition name="page">
+          <component :is="Component" :key="route.path" />
+        </Transition>
+      </RouterView>
     </main>
 
     <AppBottomNav />

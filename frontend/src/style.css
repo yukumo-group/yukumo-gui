@@ -42,3 +42,16 @@ body {
   width: 100vw;
   overflow: hidden;
 }
+
+/* Enter-only page change: fade + slide in from the right (no leave animation). */
+.page-enter-active {
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+  will-change: opacity, transform;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateX(12px);
+}
