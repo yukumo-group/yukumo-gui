@@ -81,6 +81,15 @@ export function setHue(next: number): void {
   applyResolvedTheme(resolvedTheme.value, normalized);
 }
 
+export function resetTheme(): void {
+  preference.value = 'system';
+  writeStoredPreference('system');
+  hue.value = DEFAULT_THEME_HUE;
+  writeStoredHue(DEFAULT_THEME_HUE);
+  applyResolvedTheme(resolveTheme('system', systemDark.value), DEFAULT_THEME_HUE);
+  syncWindowTheme('system');
+}
+
 function resolveTheme(
   mode: ThemePreference,
   prefersDark: boolean,

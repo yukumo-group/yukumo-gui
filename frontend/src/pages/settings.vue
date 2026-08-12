@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { ChevronRight, Monitor, Moon, Sun } from '@lucide/vue';
+import { Dialog } from '@varlet/ui';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import SettingsCard from '../components/settings/SettingsCard.vue';
 import SettingsItem from '../components/settings/SettingsItem.vue';
 import {
   appLocale,
-  isAppLocale,
+  isLocalePreference,
+  resetLocale,
   setLocale,
-  type AppLocale,
+  type LocalePreference,
 } from '../i18n';
 import { helpDestination } from '../navigation/destinations';
 import {
+  resetTheme,
   setHue,
   setPreference,
   themeHue,
@@ -29,7 +32,8 @@ let lastPointer = { x: 0, y: 0 };
 let pendingHue: number | null = null;
 let hueThrottleTimer: ReturnType<typeof setTimeout> | null = null;
 
-const localeOptions: { value: AppLocale; labelKey: string }[] = [
+const localeOptions: { value: LocalePreference; labelKey: string }[] = [
+  { value: 'system', labelKey: 'pages.settings.language.system' },
   { value: 'en-US', labelKey: 'pages.settings.language.enUS' },
   { value: 'ja-JP', labelKey: 'pages.settings.language.jaJP' },
   { value: 'zh-CN', labelKey: 'pages.settings.language.zhCN' },
@@ -120,9 +124,30 @@ function toggleAccentSlider(): void {
 
 function onLocaleChange(value: string | number): void {
   const next = String(value);
-  if (isAppLocale(next)) {
+  if (isLocalePreference(next)) {
     setLocale(next);
   }
+}
+
+async function onResetClick(): Promise<void> {
+  const result = await Dialog({
+    title: t('pages.settings.reset.confirmTitle'),
+    message: t('pages.settings.reset.confirmMessage'),
+    confirmButtonText: t('pages.settings.reset.confirm'),
+    cancelButtonText: t('pages.settings.reset.cancel'),
+    confirmButtonProps: { type: 'danger' },
+  });
+
+  if (result !== 'confirm') {
+    return;
+  }
+
+  clearHueThrottle();
+  pendingHue = null;
+  accentOpen.value = false;
+  resetTheme();
+  resetLocale();
+  sliderHue.value = themeHue.value;
 }
 </script>
 
@@ -253,6 +278,21 @@ function onLocaleChange(value: string | number): void {
             :value="option.value"
           />
         </var-select>
+      </SettingsItem>
+    </SettingsCard>
+
+    <SettingsCard>
+      <SettingsItem
+        :title="t('pages.settings.reset.title')"
+        :description="t('pages.settings.reset.description')"
+      >
+        <var-button
+          type="danger"
+          size="small"
+          @click="onResetClick"
+        >
+          {{ t('pages.settings.reset.action') }}
+        </var-button>
       </SettingsItem>
     </SettingsCard>
 

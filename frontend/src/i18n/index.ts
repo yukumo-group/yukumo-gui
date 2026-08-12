@@ -12,16 +12,21 @@ import zhCNMessages from './messages/zh-CN';
 export const APP_LOCALES = ['en-US', 'ja-JP', 'zh-CN'] as const;
 
 export type AppLocale = (typeof APP_LOCALES)[number];
+export type LocalePreference = AppLocale | 'system';
 
 const STORAGE_KEY = 'yukumo-locale';
 
-const localePreference: Ref<AppLocale> = ref(readStoredLocale());
+const preference: Ref<LocalePreference> = ref(readStoredPreference());
 
-export const appLocale = computed(() => localePreference.value);
+export const appLocale = computed(() => preference.value);
+
+export const resolvedLocale = computed<AppLocale>(() =>
+  resolveLocale(preference.value),
+);
 
 export const i18n = createI18n({
   legacy: false,
-  locale: localePreference.value,
+  locale: resolveLocale(preference.value),
   fallbackLocale: 'en-US',
   messages: {
     'en-US': enUSMessages,
@@ -34,21 +39,48 @@ Locale.add('en-US', enUS);
 Locale.add('ja-JP', jaJP);
 Locale.add('zh-CN', zhCN);
 
+let initialized = false;
+
 export function initI18n(): void {
-  applyLocale(localePreference.value);
+  if (!initialized) {
+    initialized = true;
+    window.addEventListener('languagechange', () => {
+      if (preference.value === 'system') {
+        applyLocale(detectSystemLocale());
+      }
+    });
+  }
+  applyLocale(resolvedLocale.value);
 }
 
-export function setLocale(next: AppLocale): void {
-  if (next === localePreference.value) {
+export function setLocale(next: LocalePreference): void {
+  if (next === preference.value) {
     return;
   }
-  localePreference.value = next;
-  writeStoredLocale(next);
-  applyLocale(next);
+  preference.value = next;
+  writeStoredPreference(next);
+  applyLocale(resolveLocale(next));
+}
+
+export function resetLocale(): void {
+  preference.value = 'system';
+  writeStoredPreference('system');
+  applyLocale(detectSystemLocale());
 }
 
 export function isAppLocale(value: string): value is AppLocale {
   return (APP_LOCALES as readonly string[]).includes(value);
+}
+
+export function isLocalePreference(value: string): value is LocalePreference {
+  return value === 'system' || isAppLocale(value);
+}
+
+function resolveLocale(mode: LocalePreference): AppLocale {
+  if (mode === 'system') {
+    return detectSystemLocale();
+  }
+  return mode;
 }
 
 function applyLocale(locale: AppLocale): void {
@@ -57,19 +89,19 @@ function applyLocale(locale: AppLocale): void {
   document.documentElement.lang = locale;
 }
 
-function readStoredLocale(): AppLocale {
+function readStoredPreference(): LocalePreference {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && isAppLocale(stored)) {
+    if (stored && isLocalePreference(stored)) {
       return stored;
     }
   } catch {
     // Ignore storage failures (private mode / WebView quirks).
   }
-  return detectSystemLocale();
+  return 'system';
 }
 
-function writeStoredLocale(locale: AppLocale): void {
+function writeStoredPreference(locale: LocalePreference): void {
   try {
     localStorage.setItem(STORAGE_KEY, locale);
   } catch {
@@ -77,13 +109,46 @@ function writeStoredLocale(locale: AppLocale): void {
   }
 }
 
-function detectSystemLocale(): AppLocale {
-  const language = navigator.language.toLowerCase();
-  if (language.startsWith('ja')) {
+function getPreferredLanguages(): string[] {
+  if (typeof navigator === 'undefined') {
+    return ['en'];
+  }
+
+  const nav = navigator as Navigator & { userLanguage?: string };
+  if (navigator.languages && navigator.languages.length > 0) {
+    return [...navigator.languages];
+  }
+  return [navigator.language || nav.userLanguage || 'en'];
+}
+
+function matchAppLocale(tag: string): AppLocale | null {
+  const lower = tag.toLowerCase();
+
+  for (const locale of APP_LOCALES) {
+    if (lower === locale.toLowerCase()) {
+      return locale;
+    }
+  }
+
+  if (lower.startsWith('ja')) {
     return 'ja-JP';
   }
-  if (language.startsWith('zh')) {
+  if (lower.startsWith('zh')) {
     return 'zh-CN';
+  }
+  if (lower.startsWith('en')) {
+    return 'en-US';
+  }
+
+  return null;
+}
+
+function detectSystemLocale(): AppLocale {
+  for (const tag of getPreferredLanguages()) {
+    const matched = matchAppLocale(tag);
+    if (matched) {
+      return matched;
+    }
   }
   return 'en-US';
 }
