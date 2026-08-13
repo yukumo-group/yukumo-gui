@@ -9,10 +9,11 @@ import {
   createDefaultAquesTalk2,
   supportedVersions,
 } from '../../types/profile';
-import type {
-  TimelineClip,
-  TimelineClipInsert,
-  TimelineClipSpeaker,
+import {
+  TIMELINE_CLIP_MIN_DURATION_SEC,
+  type TimelineClip,
+  type TimelineClipInsert,
+  type TimelineClipSpeaker,
 } from '../../types/timeline';
 
 export function createDefaultSpeaker(): TimelineClipSpeaker {
@@ -97,4 +98,28 @@ export function formatPanPercent(pan: number): string {
 
 export function formatClipLevels(volume: number, pan: number): string {
   return `${formatVolumeDb(volume)}  ${formatPanPercent(pan)}`;
+}
+
+export function isValidClipTimeSplit(
+  startSec: number,
+  durationSec: number,
+  atSec: number,
+): boolean {
+  const left = atSec - startSec;
+  const right = startSec + durationSec - atSec;
+  return (
+    left >= TIMELINE_CLIP_MIN_DURATION_SEC &&
+    right >= TIMELINE_CLIP_MIN_DURATION_SEC
+  );
+}
+
+export function splitIndexFromTime(
+  startSec: number,
+  durationSec: number,
+  textLength: number,
+  atSec: number,
+): number {
+  if (textLength <= 1) return 1;
+  const ratio = (atSec - startSec) / durationSec;
+  return Math.min(textLength - 1, Math.max(1, Math.round(ratio * textLength)));
 }

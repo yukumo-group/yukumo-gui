@@ -2,11 +2,8 @@ import { computed, ref, type Ref } from 'vue';
 import { snapClipsEnabled } from '../timelineSession';
 import { snapTimeToRuler } from '../timelineGrid';
 import type { TimelineViewport } from '../useTimelineViewport';
-import {
-  TIMELINE_CLIP_MIN_DURATION_SEC,
-  type TimelineClip,
-  type TimelineTrack,
-} from '../../types/timeline';
+import type { TimelineClip, TimelineTrack } from '../../types/timeline';
+import { isValidClipTimeSplit } from './clipModel';
 import {
   clientToContentPoint,
   clipAtTimeOnTrack,
@@ -82,12 +79,7 @@ export function useTimelineClipSplit(options: {
 
   function isValidSplit(clip: TimelineClip, timeSec: number): boolean {
     if (clip.text.length <= 1) return false;
-    const left = timeSec - clip.startSec;
-    const right = clip.startSec + clip.durationSec - timeSec;
-    return (
-      left >= TIMELINE_CLIP_MIN_DURATION_SEC &&
-      right >= TIMELINE_CLIP_MIN_DURATION_SEC
-    );
+    return isValidClipTimeSplit(clip.startSec, clip.durationSec, timeSec);
   }
 
   function onSplitPointerMove(e: PointerEvent): void {
