@@ -1,7 +1,6 @@
 import { computed, ref, type Ref } from 'vue';
 import type { TimelineViewport } from '../useTimelineViewport';
 import type { TimelineClip, TimelineTrack } from '../../types/timeline';
-import type { TimelineSelection } from './useTimelineSelection';
 import type { TimelineEdgeScroll } from './useTimelineEdgeScroll';
 import {
   clientToContentPoint,
@@ -23,14 +22,13 @@ interface DeleteGesture {
 export function useTimelineClipDelete(options: {
   tracks: Ref<TimelineTrack[]>;
   clipsForTrack: (trackId: string) => TimelineClip[];
-  selection: TimelineSelection;
   viewport: Pick<
     TimelineViewport,
     'pxPerSec' | 'trackHeightPx' | 'scrollXPx' | 'scrollYPx'
   >;
   lanesViewportRef: Ref<HTMLElement | null>;
   edgeScroll: TimelineEdgeScroll;
-  removeClips: (ids: readonly string[]) => void;
+  requestRemoveClips: (ids: readonly string[]) => void;
 }) {
   const gesture = ref<DeleteGesture | null>(null);
 
@@ -129,11 +127,7 @@ export function useTimelineClipDelete(options: {
           ? [g.originClipId]
           : [];
       if (ids.length > 0) {
-        options.removeClips(ids);
-        const remaining = options.selection.selectedClipIds.value.filter(
-          (id) => !ids.includes(id),
-        );
-        options.selection.setSelection(remaining);
+        options.requestRemoveClips(ids);
       }
     }
     gesture.value = null;
@@ -152,7 +146,7 @@ export function useTimelineClipDelete(options: {
   }
 
   function startDelete(e: PointerEvent, originClipId: string | null = null): void {
-    if (e.button !== 0) return;
+    if (e.button !== 0 && e.button !== 2) return;
     const point = contentPointFromClient(e.clientX, e.clientY);
     gesture.value = {
       originContentX: point.x,

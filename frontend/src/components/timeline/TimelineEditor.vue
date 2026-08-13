@@ -2,7 +2,14 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Plus } from '@lucide/vue';
-import { timelinePlayback, reconcileTimelineDuration } from '../../composables/timelineSession';
+import { Dialog } from '@varlet/ui';
+import { snapTimeToRuler } from '../../composables/timelineGrid';
+import {
+  snapClipsEnabled,
+  timelinePlayback,
+  reconcileTimelineDuration,
+} from '../../composables/timelineSession';
+import { clientToContentPoint, timeAtContentX } from '../../composables/timeline/timelinePointer';
 import { useTimelineViewport } from '../../composables/useTimelineViewport';
 import { useTimelineClipAdd } from '../../composables/timeline/useTimelineClipAdd';
 import { useTimelineClipDelete } from '../../composables/timeline/useTimelineClipDelete';
@@ -19,12 +26,21 @@ import { useTimelineMarquee } from '../../composables/timeline/useTimelineMarque
 import { useTimelineRulerScrub } from '../../composables/timeline/useTimelineRulerScrub';
 import { useTimelineSelection } from '../../composables/timeline/useTimelineSelection';
 import { useTimelineTrackReorder } from '../../composables/timeline/useTimelineTrackReorder';
+import { cloneSpeaker } from '../../composables/timeline/clipModel';
+import type { AquesTalkVersion } from '../../types/profile';
+import type { TimelineClipSpeaker } from '../../types/timeline';
 import {
   TIMELINE_BOTTOM_PAD_PX,
+  TIMELINE_CLIP_MIN_DURATION_SEC,
   TIMELINE_HEADER_WIDTH_PX,
   TIMELINE_RULER_HEIGHT_PX,
   TIMELINE_SCROLLBAR_SIZE_PX,
 } from '../../types/timeline';
+import TimelineClipContentDialog from './TimelineClipContentDialog.vue';
+import TimelineClipSplitDialog from './TimelineClipSplitDialog.vue';
+import TimelineClipToolbar from './TimelineClipToolbar.vue';
+import TimelineClipVoiceDialog from './TimelineClipVoiceDialog.vue';
+import TimelineDefaultSpeakerButton from './TimelineDefaultSpeakerButton.vue';
 import TimelineEditModeBar from './TimelineEditModeBar.vue';
 import TimelineGridLines from './TimelineGridLines.vue';
 import TimelineLane from './TimelineLane.vue';
@@ -49,12 +65,22 @@ const {
   toggleSolo,
   setVolume,
   setPan,
+  setEngine,
   applyClipPlacements,
   applyClipRanges,
   addClip,
   removeClips,
   splitClip,
   insertClips,
+  setClipText,
+  applySpeakerToClips,
+  setDefaultSpeaker,
+  lastAssignedSpeaker,
+  reconcileUnsupportedSpeakers,
+  setClipsVolume,
+  setClipsPan,
+  setClipsMuted,
+  setClipsColor,
 } = useTimelineDocument(t);
 
 /** Fit/min zoom bound — frozen during drag/scrub, committed on gesture end. */
@@ -108,7 +134,31 @@ const {
 
 const selection = useTimelineSelection();
 const { selectedClipIdSet } = selection;
-const { editMode, setEditMode } = useTimelineEditMode();
+const { editMode, stickyEditMode, setEditMode, pushOverlay, popOverlay, clearOverlays } =
+  useTimelineEditMode();
+
+let rmbDeleteOverlay = false;
+
+function endRmbDeleteOverlay(e: PointerEvent): void {
+  if (!rmbDeleteOverlay) return;
+  if (e.type !== 'pointercancel' && e.button !== 2) return;
+  rmbDeleteOverlay = false;
+  popOverlay('delete');
+  window.removeEventListener('pointerup', endRmbDeleteOverlay);
+  window.removeEventListener('pointercancel', endRmbDeleteOverlay);
+}
+
+function armRmbDeleteOverlay(): void {
+  if (rmbDeleteOverlay) return;
+  rmbDeleteOverlay = true;
+  window.addEventListener('pointerup', endRmbDeleteOverlay);
+  window.addEventListener('pointercancel', endRmbDeleteOverlay);
+}
+
+function syncHeldModifierOverlays(e: PointerEvent): void {
+  if (e.ctrlKey) pushOverlay('add');
+  if (e.altKey) pushOverlay('split');
+}
 
 const lanesViewportRef = ref<HTMLElement | null>(null);
 const rulerRef = ref<HTMLElement | null>(null);
@@ -123,7 +173,8 @@ const edgeScroll = useTimelineEdgeScroll({
   panBy,
 });
 
-const { onClipPointerDown, endClipDrag, blockedClipIds } = useTimelineClipDrag({
+const { onClipPointerDown, endClipDrag, blockedClipIds, isDragging } =
+  useTimelineClipDrag({
   clips,
   tracks,
   selection,
@@ -131,10 +182,14 @@ const { onClipPointerDown, endClipDrag, blockedClipIds } = useTimelineClipDrag({
   edgeScroll,
   applyClipPlacements,
   onDragStart: freezeFitBound,
-  onDragEnd: unfreezeFitBound,
+  onDragEnd: () => {
+    unfreezeFitBound();
+    reconcileUnsupportedSpeakers();
+  },
 });
 
-const { onClipResizePointerDown, endClipResize } = useTimelineClipResize({
+const { onClipResizePointerDown, endClipResize, isResizing } =
+  useTimelineClipResize({
   clips,
   selection,
   viewport,
@@ -144,7 +199,8 @@ const { onClipResizePointerDown, endClipResize } = useTimelineClipResize({
   onResizeEnd: unfreezeFitBound,
 });
 
-const { marqueeStyle, startMarquee, endMarquee } = useTimelineMarquee({
+const { marqueeStyle, startMarquee, endMarquee, isMarqueeActive } =
+  useTimelineMarquee({
   tracks,
   clipsForTrack,
   selection,
@@ -166,7 +222,13 @@ const {
   edgeScroll,
   addClip: (trackId, startSec, durationSec) => {
     const clip = addClip(trackId, startSec, durationSec);
-    if (clip) selection.setSelection([clip.id]);
+    if (clip) {
+      if (stickyEditMode.value === 'select') {
+        selection.addClipToSelection(clip.id);
+      } else {
+        selection.setSelection([clip.id]);
+      }
+    }
     return clip;
   },
   onAddStart: freezeFitBound,
@@ -177,12 +239,49 @@ const { deleteMarqueeStyle, dangerClipIds, startDelete, cancelDelete } =
   useTimelineClipDelete({
     tracks,
     clipsForTrack,
-    selection,
     viewport,
     lanesViewportRef,
     edgeScroll,
-    removeClips,
+    requestRemoveClips,
   });
+
+const splitDraft = ref<{ clipId: string; atSec: number } | null>(null);
+const lastPointerTimeSec = ref<number | null>(null);
+
+function pointerTimeAtClient(clientX: number): number | null {
+  const el = lanesViewportRef.value;
+  if (!el) return null;
+  const point = clientToContentPoint(
+    el,
+    clientX,
+    0,
+    scrollXPx.value,
+    scrollYPx.value,
+  );
+  const raw = timeAtContentX(point.contentX, pxPerSec.value);
+  return snapClipsEnabled.value
+    ? snapTimeToRuler(raw, pxPerSec.value)
+    : raw;
+}
+
+function rememberPointerSplitTime(clientX: number): void {
+  const timeSec = pointerTimeAtClient(clientX);
+  if (timeSec === null) return;
+  const ids = selection.selectedClipIdSet.value;
+  if (ids.size !== 1) return;
+  const clip = clips.value.find((item) => ids.has(item.id));
+  if (!clip) return;
+  if (timeSec <= clip.startSec || timeSec >= clip.startSec + clip.durationSec) {
+    return;
+  }
+  lastPointerTimeSec.value = timeSec;
+}
+
+function onSplitRequest(clipId: string, timeSec: number): void {
+  const clip = clips.value.find((item) => item.id === clipId);
+  if (!clip || clip.text.length <= 1) return;
+  splitDraft.value = { clipId, atSec: timeSec };
+}
 
 const {
   splitPreviewStyle,
@@ -193,10 +292,9 @@ const {
 } = useTimelineClipSplit({
   tracks,
   clips,
-  selection,
   viewport,
   lanesViewportRef,
-  splitClip,
+  onSplitRequest,
 });
 
 const highlightedClipIds = computed(() => {
@@ -247,6 +345,14 @@ const {
 });
 
 function onLanesBackgroundDown(e: PointerEvent): void {
+  syncHeldModifierOverlays(e);
+  if (e.button === 2 && e.pointerType !== 'touch') {
+    e.preventDefault();
+    pushOverlay('delete');
+    startDelete(e);
+    armRmbDeleteOverlay();
+    return;
+  }
   if (e.button === 0 && e.pointerType !== 'touch') {
     switch (editMode.value) {
       case 'select':
@@ -267,9 +373,18 @@ function onLanesBackgroundDown(e: PointerEvent): void {
 }
 
 function onClipDown(clipId: string, e: PointerEvent): void {
+  syncHeldModifierOverlays(e);
+  if (e.button === 2) {
+    e.preventDefault();
+    pushOverlay('delete');
+    startDelete(e, clipId);
+    armRmbDeleteOverlay();
+    return;
+  }
   switch (editMode.value) {
     case 'select':
       onClipPointerDown(clipId, e);
+      rememberPointerSplitTime(e.clientX);
       break;
     case 'delete':
       startDelete(e, clipId);
@@ -291,9 +406,19 @@ function onClipResizeDown(
   onClipResizePointerDown(clipId, edge, e);
 }
 
+function onClipDblclick(clipId: string): void {
+  endClipDrag();
+  selection.setSelection([clipId]);
+}
+
+function onClipUpdateText(clipId: string, text: string): void {
+  setClipText(clipId, text);
+}
+
 function onLanesMove(e: PointerEvent): void {
   onLanesPointerMove(e);
   onGesturePointerMove(e);
+  rememberPointerSplitTime(e.clientX);
   if (editMode.value === 'split') {
     onSplitPointerMove(e);
   }
@@ -313,34 +438,229 @@ function cancelToolGestures(): void {
   clearSplitPreview();
 }
 
-watch(editMode, (mode) => {
-  cancelToolGestures();
-  if (mode !== 'select') {
-    selection.clearSelection();
-  }
-});
+watch(
+  editMode,
+  () => {
+    cancelToolGestures();
+  },
+  { flush: 'sync' },
+);
 
-const { copySelection, pasteAtPlayhead } = useTimelineClipboard({
+watch(
+  stickyEditMode,
+  (mode) => {
+    if (mode !== 'select') {
+      selection.clearSelection();
+    }
+  },
+  { flush: 'sync' },
+);
+
+const { copySelection, cutSelection, pasteAtPlayhead } = useTimelineClipboard({
   tracks,
   clips,
   selection,
   pxPerSec,
   insertClips,
+  removeClips,
   setEditMode,
 });
+
+const selectedClips = computed(() => {
+  const ids = selection.selectedClipIdSet.value;
+  return clips.value.filter((clip) => ids.has(clip.id));
+});
+
+const firstSelectedClip = computed(() => selectedClips.value[0] ?? null);
+
+const voiceDialogTarget = ref<'clips' | 'default'>('clips');
+
+const voiceEngine = computed<AquesTalkVersion>(() => {
+  if (voiceDialogTarget.value === 'default') {
+    return tracks.value[0]?.engine ?? 2;
+  }
+  const clip = firstSelectedClip.value;
+  if (!clip) return tracks.value[0]?.engine ?? 2;
+  return tracks.value.find((track) => track.id === clip.trackId)?.engine ?? 2;
+});
+
+const voiceSpeaker = computed<TimelineClipSpeaker>(() => {
+  if (voiceDialogTarget.value === 'default') {
+    return cloneSpeaker(lastAssignedSpeaker.value);
+  }
+  return firstSelectedClip.value
+    ? cloneSpeaker(firstSelectedClip.value.speaker)
+    : cloneSpeaker(lastAssignedSpeaker.value);
+});
+
+function isValidTimeSplit(
+  startSec: number,
+  durationSec: number,
+  atSec: number,
+): boolean {
+  const left = atSec - startSec;
+  const right = startSec + durationSec - atSec;
+  return (
+    left >= TIMELINE_CLIP_MIN_DURATION_SEC &&
+    right >= TIMELINE_CLIP_MIN_DURATION_SEC
+  );
+}
+
+watch(selection.selectedClipIds, () => {
+  lastPointerTimeSec.value = null;
+});
+
+const canToolbarSplit = computed(() => {
+  if (selectedClips.value.length !== 1) return false;
+  const clip = firstSelectedClip.value;
+  const at = lastPointerTimeSec.value;
+  if (!clip || at === null || clip.text.length <= 1) return false;
+  return isValidTimeSplit(clip.startSec, clip.durationSec, at);
+});
+
+const showClipToolbar = computed(
+  () =>
+    editMode.value === 'select' &&
+    selectedClips.value.length > 0 &&
+    !isDragging.value &&
+    !isResizing.value &&
+    !isMarqueeActive.value,
+);
+
+const voiceDialogShow = ref(false);
+const contentDialogShow = ref(false);
+
+const voiceDialogTitle = computed(() =>
+  voiceDialogTarget.value === 'default'
+    ? t('pages.generate.timeline.defaultSpeakerDialogTitle')
+    : t('pages.generate.timeline.voiceDialogTitle'),
+);
+
+function openDefaultSpeakerDialog(): void {
+  voiceDialogTarget.value = 'default';
+  voiceDialogShow.value = true;
+}
+
+function openClipVoiceDialog(): void {
+  voiceDialogTarget.value = 'clips';
+  voiceDialogShow.value = true;
+}
+
+function splitIndexFromTime(clip: {
+  startSec: number;
+  durationSec: number;
+  text: string;
+}, atSec: number): number {
+  if (clip.text.length <= 1) return 1;
+  const ratio = (atSec - clip.startSec) / clip.durationSec;
+  return Math.min(
+    clip.text.length - 1,
+    Math.max(1, Math.round(ratio * clip.text.length)),
+  );
+}
+
+const splitDialogShow = computed({
+  get: () => splitDraft.value !== null,
+  set: (value: boolean) => {
+    if (!value) splitDraft.value = null;
+  },
+});
+
+const splitDialogClip = computed(() => {
+  const draft = splitDraft.value;
+  if (!draft) return null;
+  return clips.value.find((clip) => clip.id === draft.clipId) ?? null;
+});
+
+const splitDialogText = computed(() => splitDialogClip.value?.text ?? '');
+
+const splitDialogInitialIndex = computed(() => {
+  const draft = splitDraft.value;
+  const clip = splitDialogClip.value;
+  if (!draft || !clip) return 1;
+  return splitIndexFromTime(clip, draft.atSec);
+});
+
+let deleteConfirmPending = false;
+
+async function requestRemoveClips(ids: readonly string[]): Promise<void> {
+  if (ids.length === 0 || deleteConfirmPending) return;
+  deleteConfirmPending = true;
+  try {
+    const result = await Dialog({
+      title: t('pages.generate.timeline.deleteConfirmTitle'),
+      message: t('pages.generate.timeline.deleteConfirmMessage', {
+        n: ids.length,
+      }),
+      confirmButtonText: t('pages.generate.timeline.deleteConfirm'),
+      cancelButtonText: t('pages.generate.timeline.deleteCancel'),
+      confirmButtonProps: { type: 'danger' },
+    });
+    if (result !== 'confirm') return;
+    const idSet = new Set(ids);
+    removeClips(ids);
+    selection.setSelection(
+      selection.selectedClipIds.value.filter((id) => !idSet.has(id)),
+    );
+  } finally {
+    deleteConfirmPending = false;
+  }
+}
 
 function deleteSelection(): boolean {
   const ids = selection.selectedClipIds.value;
   if (ids.length === 0) return false;
-  removeClips(ids);
-  selection.clearSelection();
+  void requestRemoveClips(ids);
   return true;
+}
+
+function onToolbarSplit(): void {
+  const clip = firstSelectedClip.value;
+  const at = lastPointerTimeSec.value;
+  if (!clip || at === null || !canToolbarSplit.value) return;
+  onSplitRequest(clip.id, at);
+}
+
+function onToolbarMute(): void {
+  const ids = selection.selectedClipIds.value;
+  const allMuted =
+    selectedClips.value.length > 0 &&
+    selectedClips.value.every((clip) => clip.muted);
+  setClipsMuted(ids, !allMuted);
+}
+
+function onVoiceConfirm(speaker: TimelineClipSpeaker): void {
+  if (voiceDialogTarget.value === 'default') {
+    setDefaultSpeaker(speaker);
+    return;
+  }
+  applySpeakerToClips(selection.selectedClipIds.value, speaker);
+}
+
+function onContentConfirm(text: string): void {
+  const clip = firstSelectedClip.value;
+  if (!clip) return;
+  setClipText(clip.id, text);
+}
+
+function onSplitConfirm(index: number): void {
+  const draft = splitDraft.value;
+  if (!draft) return;
+  const right = splitClip(draft.clipId, draft.atSec, index);
+  if (right) {
+    selection.setSelection([draft.clipId, right.id]);
+    setEditMode('select');
+  }
 }
 
 useTimelineHotkeys({
   editMode,
   setEditMode,
+  pushOverlay,
+  popOverlay,
+  clearOverlays,
   copySelection,
+  cutSelection,
   pasteAtPlayhead,
   deleteSelection,
 });
@@ -353,6 +673,12 @@ onUnmounted(() => {
   onReorderEnd();
   cancelToolGestures();
   edgeScroll.stop();
+  clearOverlays();
+  if (rmbDeleteOverlay) {
+    rmbDeleteOverlay = false;
+    window.removeEventListener('pointerup', endRmbDeleteOverlay);
+    window.removeEventListener('pointercancel', endRmbDeleteOverlay);
+  }
 });
 
 defineExpose({
@@ -377,12 +703,19 @@ defineExpose({
         :style="{ width: `${TIMELINE_HEADER_WIDTH_PX}px` }"
       >
         <div
-          class="flex shrink-0 items-center border-b border-outline/30 px-1"
+          class="flex shrink-0 items-center border-b border-outline/30 pr-0.5 pl-1"
           :style="{
             height: `${TIMELINE_SCROLLBAR_SIZE_PX + TIMELINE_RULER_HEIGHT_PX}px`,
           }"
         >
-          <TimelineEditModeBar v-model="editMode" />
+          <TimelineEditModeBar
+            v-model="editMode"
+            class="min-w-0 flex-1"
+          />
+          <TimelineDefaultSpeakerButton
+            :speaker="lastAssignedSpeaker"
+            @click="openDefaultSpeakerDialog"
+          />
         </div>
         <div class="min-h-0 flex-1 overflow-hidden">
           <div :style="{ transform: `translateY(${-scrollYPx}px)` }">
@@ -406,6 +739,7 @@ defineExpose({
               @reorder-start="onReorderStart(track.id, $event)"
               @update-volume="setVolume(track.id, $event)"
               @update-pan="setPan(track.id, $event)"
+              @update-engine="setEngine(track.id, $event)"
             />
             <div
               class="shrink-0"
@@ -476,6 +810,7 @@ defineExpose({
             @pointercancel="onLanesUp"
             @pointerleave="onSplitPointerLeave"
             @auxclick.prevent
+            @contextmenu.prevent
           >
             <div
               class="absolute top-0 left-0"
@@ -506,6 +841,8 @@ defineExpose({
                 :clip-aria-label="clipAriaLabel"
                 @clip-pointer-down="onClipDown"
                 @clip-resize-pointer-down="onClipResizeDown"
+                @clip-dblclick="onClipDblclick"
+                @clip-update-text="onClipUpdateText"
               />
               <div
                 v-if="addPreviewStyle"
@@ -557,6 +894,26 @@ defineExpose({
               :left-px="playheadLeftPx"
               :height-px="viewportHeightPx"
             />
+
+            <div
+              v-if="showClipToolbar"
+              class="pointer-events-none absolute inset-x-0 bottom-3 z-40 flex justify-center px-3"
+            >
+              <TimelineClipToolbar
+                :clips="selectedClips"
+                :can-split="canToolbarSplit"
+                @voice="openClipVoiceDialog"
+                @content="contentDialogShow = true"
+                @split="onToolbarSplit"
+                @color="setClipsColor(selection.selectedClipIds.value, $event)"
+                @volume="setClipsVolume(selection.selectedClipIds.value, $event)"
+                @pan="setClipsPan(selection.selectedClipIds.value, $event)"
+                @mute="onToolbarMute"
+                @copy="copySelection"
+                @cut="cutSelection"
+                @delete="deleteSelection"
+              />
+            </div>
           </div>
 
           <TimelineScrollbar
@@ -571,5 +928,24 @@ defineExpose({
         </div>
       </div>
     </div>
+
+    <TimelineClipVoiceDialog
+      v-model:show="voiceDialogShow"
+      :version="voiceEngine"
+      :speaker="voiceSpeaker"
+      :title="voiceDialogTitle"
+      @confirm="onVoiceConfirm"
+    />
+    <TimelineClipContentDialog
+      v-model:show="contentDialogShow"
+      :text="firstSelectedClip?.text ?? ''"
+      @confirm="onContentConfirm"
+    />
+    <TimelineClipSplitDialog
+      v-model:show="splitDialogShow"
+      :text="splitDialogText"
+      :initial-index="splitDialogInitialIndex"
+      @confirm="onSplitConfirm"
+    />
   </div>
 </template>

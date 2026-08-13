@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { GripVertical } from '@lucide/vue';
 import type { TimelineTrack } from '../../types/timeline';
-import {
-  TIMELINE_COMPACT_HEIGHT_PX,
-  TIMELINE_INLINE_LABEL_HEIGHT_PX,
-} from '../../types/timeline';
+import { TIMELINE_INLINE_LABEL_HEIGHT_PX } from '../../types/timeline';
+import TimelineEngineSelect from './TimelineEngineSelect.vue';
 import TimelineKnob from './TimelineKnob.vue';
 
 const props = defineProps<{
@@ -29,66 +27,18 @@ const emit = defineEmits<{
   reorderStart: [event: PointerEvent];
   updateVolume: [value: number];
   updatePan: [value: number];
+  updateEngine: [value: TimelineTrack['engine']];
 }>();
 
-const showKnobs = computed(() => props.heightPx >= TIMELINE_COMPACT_HEIGHT_PX);
-const inlineLabel = computed(
-  () => props.heightPx < TIMELINE_INLINE_LABEL_HEIGHT_PX,
-);
-const showTopLabel = computed(() => !inlineLabel.value);
-const compactControls = computed(() => !showKnobs.value);
-
-const controlsRef = ref<HTMLElement | null>(null);
-const rowRef = ref<HTMLElement | null>(null);
-const iconSizePx = ref(56);
-
-let resizeObserver: ResizeObserver | undefined;
-
-function syncIconSize(): void {
-  if (!showKnobs.value) {
-    const row = rowRef.value;
-    if (row) {
-      const h = Math.round(row.getBoundingClientRect().height);
-      if (h > 0) {
-        iconSizePx.value = Math.max(18, h);
-        return;
-      }
-    }
-    iconSizePx.value = Math.max(18, props.heightPx - (showTopLabel.value ? 24 : 8));
-    return;
-  }
-
-  const el = controlsRef.value;
-  if (!el) return;
-  const h = Math.round(el.getBoundingClientRect().height);
-  if (h > 0) iconSizePx.value = h;
-}
-
-function bindObservers(): void {
-  resizeObserver?.disconnect();
-  resizeObserver = new ResizeObserver(() => syncIconSize());
-  if (controlsRef.value) resizeObserver.observe(controlsRef.value);
-  if (rowRef.value) resizeObserver.observe(rowRef.value);
-  syncIconSize();
-}
-
-onMounted(() => {
-  nextTick(() => bindObservers());
-});
-
-onUnmounted(() => {
-  resizeObserver?.disconnect();
-});
-
-watch([showKnobs, showTopLabel, inlineLabel, () => props.heightPx], () => {
-  nextTick(() => bindObservers());
-});
+const inline = computed(() => props.heightPx < TIMELINE_INLINE_LABEL_HEIGHT_PX);
+const knobSize = computed(() => (inline.value ? 22 : 24));
 </script>
 
 <template>
   <div
-    class="relative flex shrink-0 flex-col border-b border-outline/20 py-1 pr-1.5 pl-5"
+    class="relative flex shrink-0 border-b border-outline/20 py-1 pr-1.5 pl-5"
     :class="[
+      inline ? 'flex-row items-center gap-1' : 'flex-col gap-0.5',
       dimmed ? 'opacity-40' : '',
       isDragging ? 'z-30 bg-surface-container-high shadow-md' : '',
     ]"
@@ -109,104 +59,77 @@ watch([showKnobs, showTopLabel, inlineLabel, () => props.heightPx], () => {
       />
     </button>
 
-    <span
-      v-if="showTopLabel"
-      class="min-w-0 truncate pr-1 font-semibold text-text leading-tight"
-      :class="showKnobs ? 'text-sm' : 'text-xs'"
-      :title="track.name"
-    >
-      {{ track.name }}
-    </span>
-
     <div
-      ref="rowRef"
-      class="flex min-h-0 flex-1 items-center gap-2"
+      class="flex min-w-0 items-center gap-1"
+      :class="inline ? 'flex-1' : ''"
     >
-      <div
-        class="shrink-0 rounded-lg border border-outline/40 bg-surface-container-high"
-        :style="{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }"
-        aria-hidden="true"
+      <TimelineEngineSelect
+        v-show="!inline"
+        class="mt-0.5 mr-1"
+        :model-value="track.engine"
+        @update:model-value="emit('updateEngine', $event)"
       />
-
       <span
-        v-if="inlineLabel"
-        class="min-w-0 flex-1 truncate pl-1 font-semibold text-text text-xs leading-tight"
+        class="min-w-0 truncate font-semibold text-text leading-tight"
+        :class="inline ? 'flex-1 text-xs' : 'text-md'"
         :title="track.name"
       >
         {{ track.name }}
       </span>
-      <div
-        v-else
-        class="min-w-2 flex-1"
-        aria-hidden="true"
+    </div>
+
+    <div
+      class="flex shrink-0 items-center"
+      :class="inline ? '' : 'mt-auto justify-end'"
+    >
+      <TimelineKnob
+        :model-value="track.volume"
+        :min="0"
+        :max="1"
+        :size="knobSize"
+        unit="db"
+        :ariaLabel="volumeLabel"
+        @update:model-value="emit('updateVolume', $event)"
       />
-
-      <div
-        ref="controlsRef"
-        class="flex shrink-0 items-center gap-1.5"
+      <TimelineKnob
+        :model-value="track.pan"
+        :min="-1"
+        :max="1"
+        :size="knobSize"
+        offset
+        unit="percent"
+        :ariaLabel="panLabel"
+        class="ml-1.5 mr-0.5"
+        @update:model-value="emit('updatePan', $event)"
+      />
+      <button
+        type="button"
+        class="inline-flex size-6 shrink-0 items-center justify-center rounded-md font-bold text-[11px] hover:bg-surface-container-high"
+        :class="
+          track.muted
+            ? 'bg-danger/15 text-danger'
+            : 'text-on-surface-variant'
+        "
+        :aria-label="track.muted ? unmuteLabel : muteLabel"
+        :aria-pressed="track.muted"
+        @click.stop="emit('toggleMute')"
       >
-        <div
-          v-if="showKnobs"
-          class="flex flex-col items-center justify-center gap-1"
-        >
-          <TimelineKnob
-            :model-value="track.volume"
-            :min="0"
-            :max="1"
-            :size="26"
-            :ariaLabel="volumeLabel"
-            @update:model-value="emit('updateVolume', $event)"
-          />
-          <TimelineKnob
-            :model-value="track.pan"
-            :min="-1"
-            :max="1"
-            :size="26"
-            offset
-            :ariaLabel="panLabel"
-            @update:model-value="emit('updatePan', $event)"
-          />
-        </div>
-
-        <div
-          class="flex items-center justify-center"
-          :class="
-            compactControls ? 'flex-row gap-0.5' : 'flex-col gap-0.5'
-          "
-        >
-          <button
-            type="button"
-            class="inline-flex shrink-0 items-center justify-center rounded-md font-bold hover:bg-surface-container-high"
-            :class="[
-              compactControls ? 'size-6 text-[11px]' : 'size-7 text-xs',
-              track.muted
-                ? 'bg-danger/15 text-danger'
-                : 'text-on-surface-variant',
-            ]"
-            :aria-label="track.muted ? unmuteLabel : muteLabel"
-            :aria-pressed="track.muted"
-            @click.stop="emit('toggleMute')"
-          >
-            M
-          </button>
-
-          <button
-            type="button"
-            class="inline-flex shrink-0 items-center justify-center rounded-md font-bold hover:bg-surface-container-high"
-            :class="[
-              compactControls ? 'size-6 text-[11px]' : 'size-7 text-xs',
-              track.solo
-                ? 'bg-primary/20 text-primary'
-                : 'text-on-surface-variant',
-            ]"
-            :aria-label="track.solo ? unsoloLabel : soloLabel"
-            :aria-pressed="track.solo"
-            @click.stop="emit('toggleSolo')"
-          >
-            S
-          </button>
-        </div>
-      </div>
+        M
+      </button>
+      <button
+        type="button"
+        class="inline-flex size-6 shrink-0 items-center justify-center rounded-md font-bold text-[11px] hover:bg-surface-container-high"
+        :class="
+          track.solo
+            ? 'bg-primary/20 text-primary'
+            : 'text-on-surface-variant'
+        "
+        :aria-label="track.solo ? unsoloLabel : soloLabel"
+        :aria-pressed="track.solo"
+        @click.stop="emit('toggleSolo')"
+      >
+        S
+      </button>
     </div>
   </div>
 </template>

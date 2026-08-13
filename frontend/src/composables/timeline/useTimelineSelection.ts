@@ -12,6 +12,11 @@ export function useTimelineSelection() {
     selectedClipIds.value = [...new Set(ids)];
   }
 
+  function addClipToSelection(clipId: string): void {
+    if (selectedClipIdSet.value.has(clipId)) return;
+    selectedClipIds.value = [...selectedClipIds.value, clipId];
+  }
+
   function toggleClipInSelection(clipId: string): void {
     if (selectedClipIdSet.value.has(clipId)) {
       selectedClipIds.value = selectedClipIds.value.filter(
@@ -27,6 +32,7 @@ export function useTimelineSelection() {
     selectedClipIdSet,
     clearSelection,
     setSelection,
+    addClipToSelection,
     toggleClipInSelection,
   };
 }

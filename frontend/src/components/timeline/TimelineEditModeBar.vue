@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { MousePointer2, PenLine, Scissors, Trash2 } from '@lucide/vue';
+import { BetweenVerticalStart, MousePointer2, PenLine, Trash2 } from '@lucide/vue';
 import type { TimelineEditMode } from '../../types/timeline';
 
 defineProps<{
@@ -32,7 +32,7 @@ const tools: {
   {
     id: 'add',
     icon: PenLine,
-    shortcut: 'w',
+    shortcut: 'w Control',
     labelKey: 'pages.generate.timeline.editModeAdd',
   },
   {
@@ -43,8 +43,8 @@ const tools: {
   },
   {
     id: 'split',
-    icon: Scissors,
-    shortcut: 'r',
+    icon: BetweenVerticalStart,
+    shortcut: 'r Alt',
     labelKey: 'pages.generate.timeline.editModeSplit',
   },
 ];
@@ -52,7 +52,7 @@ const tools: {
 
 <template>
   <div
-    class="flex h-full items-center justify-center gap-1"
+    class="flex h-full items-center justify-center gap-0"
     role="radiogroup"
     :aria-label="t('pages.generate.timeline.editModeToolbar')"
   >

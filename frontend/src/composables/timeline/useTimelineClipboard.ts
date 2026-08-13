@@ -1,12 +1,16 @@
 import { ref, type Ref } from 'vue';
 import { snapClipsEnabled, timelinePlayback } from '../timelineSession';
 import { snapTimeToRuler } from '../timelineGrid';
-import type { TimelineClip, TimelineEditMode, TimelineTrack } from '../../types/timeline';
+import type {
+  TimelineClip,
+  TimelineClipInsert,
+  TimelineEditMode,
+  TimelineTrack,
+} from '../../types/timeline';
 import type { TimelineSelection } from './useTimelineSelection';
+import { clipPayload } from './clipModel';
 
-interface ClipboardClip {
-  durationSec: number;
-  label: string;
+interface ClipboardClip extends Omit<TimelineClipInsert, 'trackId' | 'startSec'> {
   relativeStartSec: number;
   relativeTrackIndex: number;
 }
@@ -55,14 +59,8 @@ export function useTimelineClipboard(options: {
   clips: Ref<TimelineClip[]>;
   selection: TimelineSelection;
   pxPerSec: Ref<number>;
-  insertClips: (
-    entries: Array<{
-      trackId: string;
-      startSec: number;
-      durationSec: number;
-      label: string;
-    }>,
-  ) => TimelineClip[];
+  insertClips: (entries: TimelineClipInsert[]) => TimelineClip[];
+  removeClips: (ids: readonly string[]) => void;
   setEditMode: (mode: TimelineEditMode) => void;
 }) {
   const clipboard = ref<ClipboardPayload | null>(null);
@@ -93,13 +91,29 @@ export function useTimelineClipboard(options: {
 
     clipboard.value = {
       baseTrackIndex: minTrack,
-      clips: selected.map((item) => ({
-        durationSec: item.clip.durationSec,
-        label: item.clip.label,
-        relativeStartSec: item.clip.startSec - minStart,
-        relativeTrackIndex: item.trackIndex - minTrack,
-      })),
+      clips: selected.map((item) => {
+        const payload = clipPayload(item.clip);
+        return {
+          durationSec: payload.durationSec,
+          text: payload.text,
+          speaker: payload.speaker,
+          volume: payload.volume,
+          pan: payload.pan,
+          muted: payload.muted,
+          color: payload.color,
+          relativeStartSec: item.clip.startSec - minStart,
+          relativeTrackIndex: item.trackIndex - minTrack,
+        };
+      }),
     };
+    return true;
+  }
+
+  function cutSelection(): boolean {
+    if (!copySelection()) return false;
+    const ids = options.selection.selectedClipIds.value.slice();
+    options.removeClips(ids);
+    options.selection.clearSelection();
     return true;
   }
 
@@ -125,12 +139,7 @@ export function useTimelineClipboard(options: {
       base = Math.max(0, tracks.length - 1 - maxRelTrack);
     }
 
-    const placements: Array<{
-      trackId: string;
-      startSec: number;
-      durationSec: number;
-      label: string;
-    }> = [];
+    const placements: TimelineClipInsert[] = [];
 
     for (const item of payload.clips) {
       const trackIndex = Math.min(
@@ -143,7 +152,12 @@ export function useTimelineClipboard(options: {
         trackId: track.id,
         startSec: originSec + item.relativeStartSec,
         durationSec: item.durationSec,
-        label: item.label,
+        text: item.text,
+        speaker: item.speaker,
+        volume: item.volume,
+        pan: item.pan,
+        muted: item.muted,
+        color: item.color,
       });
     }
 
@@ -159,6 +173,7 @@ export function useTimelineClipboard(options: {
   return {
     clipboard,
     copySelection,
+    cutSelection,
     pasteAtPlayhead,
   };
 }

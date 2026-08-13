@@ -7,7 +7,6 @@ import {
   type TimelineClip,
   type TimelineTrack,
 } from '../../types/timeline';
-import type { TimelineSelection } from './useTimelineSelection';
 import {
   clientToContentPoint,
   clipAtTimeOnTrack,
@@ -25,13 +24,12 @@ interface SplitPreview {
 export function useTimelineClipSplit(options: {
   tracks: Ref<TimelineTrack[]>;
   clips: Ref<TimelineClip[]>;
-  selection: TimelineSelection;
   viewport: Pick<
     TimelineViewport,
     'pxPerSec' | 'trackHeightPx' | 'scrollXPx' | 'scrollYPx'
   >;
   lanesViewportRef: Ref<HTMLElement | null>;
-  splitClip: (clipId: string, atSec: number) => TimelineClip | null;
+  onSplitRequest: (clipId: string, timeSec: number) => void;
 }) {
   const preview = ref<SplitPreview | null>(null);
 
@@ -83,6 +81,7 @@ export function useTimelineClipSplit(options: {
   }
 
   function isValidSplit(clip: TimelineClip, timeSec: number): boolean {
+    if (clip.text.length <= 1) return false;
     const left = timeSec - clip.startSec;
     const right = clip.startSec + clip.durationSec - timeSec;
     return (
@@ -131,9 +130,8 @@ export function useTimelineClipSplit(options: {
       ? snapTimeToRuler(rawTime, options.viewport.pxPerSec.value)
       : rawTime;
     if (!isValidSplit(clip, timeSec)) return;
-    const right = options.splitClip(clipId, timeSec);
-    if (!right) return;
-    options.selection.setSelection([clipId, right.id]);
+    if (clip.text.length <= 1) return;
+    options.onSplitRequest(clipId, timeSec);
     preview.value = null;
   }
 

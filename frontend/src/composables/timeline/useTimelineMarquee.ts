@@ -135,7 +135,7 @@ export function useTimelineMarquee(options: {
       originContentY: point.y,
       currentContentX: point.x,
       currentContentY: point.y,
-      additive: e.ctrlKey || e.metaKey,
+      additive: e.shiftKey || e.ctrlKey || e.metaKey,
       lastClientX: e.clientX,
       lastClientY: e.clientY,
     };
@@ -154,9 +154,12 @@ export function useTimelineMarquee(options: {
     );
   }
 
+  const isMarqueeActive = computed(() => marquee.value !== null);
+
   return {
     marqueeStyle,
     startMarquee,
     endMarquee,
+    isMarqueeActive,
   };
 }

@@ -230,15 +230,16 @@ export function useTimelineClipDrag(options: {
       selectedClipIds,
       selectedClipIdSet,
       setSelection,
+      addClipToSelection,
       toggleClipInSelection,
     } = options.selection;
 
-    if (e.ctrlKey || e.metaKey) {
+    if (e.shiftKey) {
+      addClipToSelection(clipId);
+    } else if (e.ctrlKey || e.metaKey) {
       toggleClipInSelection(clipId);
       return;
-    }
-
-    if (!selectedClipIdSet.value.has(clipId)) {
+    } else if (!selectedClipIdSet.value.has(clipId)) {
       setSelection([clipId]);
     }
 
@@ -300,9 +301,12 @@ export function useTimelineClipDrag(options: {
     );
   }
 
+  const isDragging = computed(() => clipDrag.value !== null);
+
   return {
     onClipPointerDown,
     endClipDrag,
     blockedClipIds,
+    isDragging,
   };
 }

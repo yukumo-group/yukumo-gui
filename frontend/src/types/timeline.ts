@@ -1,3 +1,10 @@
+import type {
+  AquesTalk1Config,
+  AquesTalk10Config,
+  AquesTalk2Config,
+  AquesTalkVersion,
+} from './profile';
+
 export interface TimelineTrack {
   id: string;
   name: string;
@@ -7,6 +14,29 @@ export interface TimelineTrack {
   volume: number;
   /** -1 (L) … 1 (R) */
   pan: number;
+  engine: AquesTalkVersion;
+}
+
+export type TimelineClipColor =
+  | 'primary'
+  | 'info'
+  | 'warning'
+  | 'success'
+  | 'danger';
+
+export const TIMELINE_CLIP_COLORS: TimelineClipColor[] = [
+  'primary',
+  'info',
+  'warning',
+  'success',
+  'danger',
+];
+
+export interface TimelineClipSpeaker {
+  profileId: string;
+  aquestalk1: AquesTalk1Config;
+  aquestalk2: AquesTalk2Config;
+  aquestalk10: AquesTalk10Config;
 }
 
 export interface TimelineClip {
@@ -14,8 +44,17 @@ export interface TimelineClip {
   trackId: string;
   startSec: number;
   durationSec: number;
-  label: string;
+  text: string;
+  speaker: TimelineClipSpeaker;
+  /** 0–1 */
+  volume: number;
+  /** -1 (L) … 1 (R) */
+  pan: number;
+  muted: boolean;
+  color: TimelineClipColor;
 }
+
+export type TimelineClipInsert = Omit<TimelineClip, 'id'>;
 
 export type TimelineEditMode = 'select' | 'add' | 'delete' | 'split';
 
@@ -51,9 +90,7 @@ export const TIMELINE_HEADER_WIDTH_PX = 170;
 export const TIMELINE_SCROLLBAR_SIZE_PX = 14;
 /** Bottom spacer so the last track can scroll clear of the Add track bar. */
 export const TIMELINE_BOTTOM_PAD_PX = 44;
-/** Below this track height, hide volume/pan knobs (label may still show on top). */
-export const TIMELINE_COMPACT_HEIGHT_PX = 70;
-/** Below this, move speaker label beside the icon with ellipsis. */
+/** Below this, label and vol/pan/M/S share a single row. */
 export const TIMELINE_INLINE_LABEL_HEIGHT_PX = 54;
 /** Smallest clip duration when resizing. */
 export const TIMELINE_CLIP_MIN_DURATION_SEC = 0.05;

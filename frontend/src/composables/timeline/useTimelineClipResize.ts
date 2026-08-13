@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import { snapClipsEnabled } from '../timelineSession';
 import { snapTimeToRuler } from '../timelineGrid';
 import type { TimelineViewport } from '../useTimelineViewport';
@@ -227,15 +227,16 @@ export function useTimelineClipResize(options: {
       selectedClipIds,
       selectedClipIdSet,
       setSelection,
+      addClipToSelection,
       toggleClipInSelection,
     } = options.selection;
 
-    if (e.ctrlKey || e.metaKey) {
+    if (e.shiftKey) {
+      addClipToSelection(clipId);
+    } else if (e.ctrlKey || e.metaKey) {
       toggleClipInSelection(clipId);
       return;
-    }
-
-    if (!selectedClipIdSet.value.has(clipId)) {
+    } else if (!selectedClipIdSet.value.has(clipId)) {
       setSelection([clipId]);
     }
 
@@ -285,8 +286,11 @@ export function useTimelineClipResize(options: {
     );
   }
 
+  const isResizing = computed(() => clipResize.value !== null);
+
   return {
     onClipResizePointerDown,
     endClipResize,
+    isResizing,
   };
 }

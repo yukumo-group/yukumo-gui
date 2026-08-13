@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
+export type TimelineKnobUnit = 'percent' | 'db';
+
 const props = withDefaults(
   defineProps<{
     modelValue: number;
@@ -8,6 +10,7 @@ const props = withDefaults(
     max?: number;
     size?: number;
     ariaLabel: string;
+    unit?: TimelineKnobUnit;
     /**
      * Bipolar mapping: 0 sits at center (0deg),
      * negative → left (−180), positive → right (+180).
@@ -18,6 +21,7 @@ const props = withDefaults(
     min: 0,
     max: 1,
     size: 28,
+    unit: 'percent',
     offset: false,
   },
 );
@@ -33,6 +37,13 @@ const BODY_R = 36;
 const LINE_R = 32;
 
 const pressed = ref(false);
+const hoverShow = ref(false);
+const tooltipShow = computed(() => pressed.value || hoverShow.value);
+
+function onTooltipShow(show: boolean): void {
+  if (!show && pressed.value) return;
+  hoverShow.value = show;
+}
 
 /** CSS-like angles: 0 = up, positive clockwise. */
 function polar(deg: number, radius: number): { x: number; y: number } {
@@ -104,6 +115,23 @@ function clampValue(v: number): number {
   return clamp(v, props.min, props.max);
 }
 
+function formatSigned(n: number, digits: number): string {
+  const rounded = Number(n.toFixed(digits));
+  if (rounded === 0) return `+${(0).toFixed(digits)}`;
+  if (rounded > 0) return `+${rounded.toFixed(digits)}`;
+  return rounded.toFixed(digits);
+}
+
+const valueText = computed(() => {
+  if (props.unit === 'db') {
+    if (props.modelValue <= 0) return '-∞ dB';
+    return `${formatSigned(20 * Math.log10(props.modelValue), 1)} dB`;
+  }
+  return `${formatSigned(props.modelValue * 100, 0)}%`;
+});
+
+const tooltipContent = computed(() => `${props.ariaLabel}: ${valueText.value}`);
+
 function onPointerDown(e: PointerEvent): void {
   if (e.button !== 0) return;
   e.preventDefault();
@@ -125,11 +153,19 @@ function onPointerMove(e: PointerEvent): void {
 function onPointerUp(e: PointerEvent): void {
   dragging = false;
   pressed.value = false;
+  const el = e.currentTarget as HTMLElement;
   try {
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    el.releasePointerCapture(e.pointerId);
   } catch {
     /* already released */
   }
+  const r = el.getBoundingClientRect();
+  hoverShow.value =
+    e.pointerType === 'mouse' &&
+    e.clientX >= r.left &&
+    e.clientX <= r.right &&
+    e.clientY >= r.top &&
+    e.clientY <= r.bottom;
 }
 
 function onDblClick(e: MouseEvent): void {
@@ -143,67 +179,87 @@ function onDblClick(e: MouseEvent): void {
 </script>
 
 <template>
-  <button
-    type="button"
-    class="group relative inline-flex shrink-0 cursor-ns-resize items-center justify-center touch-none text-primary"
-    :class="{ 'is-pressed': pressed }"
-    :style="{ width: `${size}px`, height: `${size}px` }"
-    :aria-label="ariaLabel"
-    :aria-valuemin="min"
-    :aria-valuemax="max"
-    :aria-valuenow="modelValue"
-    role="slider"
-    @pointerdown="onPointerDown"
-    @pointermove="onPointerMove"
-    @pointerup="onPointerUp"
-    @pointercancel="onPointerUp"
-    @dblclick="onDblClick"
+  <var-tooltip
+    class="knob-tooltip"
+    :style="{
+      display: 'flex',
+      width: `${size}px`,
+      height: `${size}px`,
+    }"
+    :content="tooltipContent"
+    placement="top"
+    :show="tooltipShow"
+    @update:show="onTooltipShow"
   >
-    <svg
-      class="pointer-events-none size-full overflow-visible"
-      viewBox="0 0 100 100"
-      aria-hidden="true"
+    <button
+      type="button"
+      class="group relative flex size-full cursor-ns-resize items-center justify-center touch-none text-primary"
+      :class="{ 'is-pressed': pressed }"
+      :aria-label="ariaLabel"
+      :aria-valuemin="min"
+      :aria-valuemax="max"
+      :aria-valuenow="modelValue"
+      :aria-valuetext="valueText"
+      role="slider"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+      @pointercancel="onPointerUp"
+      @dblclick="onDblClick"
     >
-      <path
-        v-if="trackArcPath"
-        :d="trackArcPath"
-        fill="none"
-        class="stroke-outline/35"
-        stroke-width="5"
-        stroke-linecap="round"
-      />
-      <path
-        v-if="valueArcPath"
-        :d="valueArcPath"
-        fill="none"
-        class="stroke-primary"
-        stroke-width="5"
-        stroke-linecap="round"
-      />
-
-      <g class="knob-inner origin-center transition-transform duration-150 ease-out">
-        <circle
-          :cx="CX"
-          :cy="CY"
-          :r="BODY_R"
-          class="fill-surface-container-high"
+      <svg
+        class="pointer-events-none size-full overflow-visible"
+        viewBox="0 0 100 100"
+        aria-hidden="true"
+      >
+        <path
+          v-if="trackArcPath"
+          :d="trackArcPath"
+          fill="none"
+          class="stroke-outline/35"
+          stroke-width="5"
+          stroke-linecap="round"
         />
-        <line
-          :x1="CX"
-          :y1="CY"
-          :x2="lineEnd.x"
-          :y2="lineEnd.y"
+        <path
+          v-if="valueArcPath"
+          :d="valueArcPath"
+          fill="none"
           class="stroke-primary"
           stroke-width="5"
           stroke-linecap="round"
         />
-        <circle :cx="CX" :cy="CY" r="5" class="fill-outline" />
-      </g>
-    </svg>
-  </button>
+
+        <g class="knob-inner origin-center transition-transform duration-150 ease-out">
+          <circle
+            :cx="CX"
+            :cy="CY"
+            :r="BODY_R"
+            class="fill-surface-container-high"
+          />
+          <line
+            :x1="CX"
+            :y1="CY"
+            :x2="lineEnd.x"
+            :y2="lineEnd.y"
+            class="stroke-primary"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <circle :cx="CX" :cy="CY" r="5" class="fill-outline" />
+        </g>
+      </svg>
+    </button>
+  </var-tooltip>
 </template>
 
 <style scoped>
+.knob-tooltip {
+  display: flex;
+  flex-shrink: 0;
+  line-height: 0;
+  overflow: visible;
+}
+
 .knob-inner {
   transform-box: view-box;
   transform-origin: 50px 50px;

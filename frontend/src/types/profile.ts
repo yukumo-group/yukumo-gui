@@ -1,5 +1,8 @@
 export type AquesTalkVersion = 1 | 2 | 10;
 
+/** Sentinel id for an unsaved / ad-hoc voice config (not a character profile). */
+export const CUSTOM_PROFILE_ID = '__custom__';
+
 export type At10Preset = 'F1' | 'F2' | 'F3' | 'M1' | 'M2' | 'R1' | 'R2' | 'custom';
 
 export type At10Base = 0 | 1 | 2;

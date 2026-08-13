@@ -25,18 +25,36 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export function useTimelineHotkeys(options: {
   editMode: Ref<TimelineEditMode>;
   setEditMode: (mode: TimelineEditMode) => void;
+  pushOverlay: (mode: TimelineEditMode) => void;
+  popOverlay: (mode: TimelineEditMode) => void;
+  clearOverlays: () => void;
   copySelection: () => boolean;
+  cutSelection: () => boolean;
   pasteAtPlayhead: () => boolean;
   deleteSelection: () => boolean;
 }) {
   function onKeyDown(e: KeyboardEvent): void {
     if (isTypingTarget(e.target)) return;
 
+    if (!e.repeat && e.key === 'Control') {
+      options.pushOverlay('add');
+      return;
+    }
+    if (!e.repeat && e.key === 'Alt') {
+      e.preventDefault();
+      options.pushOverlay('split');
+      return;
+    }
+
     const mod = e.ctrlKey || e.metaKey;
     if (mod && !e.altKey && !e.shiftKey) {
       const key = e.key.toLowerCase();
       if (key === 'c') {
         if (options.copySelection()) e.preventDefault();
+        return;
+      }
+      if (key === 'x') {
+        if (options.cutSelection()) e.preventDefault();
         return;
       }
       if (key === 'v') {
@@ -95,18 +113,31 @@ export function useTimelineHotkeys(options: {
   }
 
   function onKeyUp(e: KeyboardEvent): void {
+    if (e.key === 'Control' && !e.ctrlKey) {
+      options.popOverlay('add');
+    }
+    if (e.key === 'Alt' && !e.altKey) {
+      e.preventDefault();
+      options.popOverlay('split');
+    }
     if (isTypingTarget(e.target)) return;
     if (e.code !== 'Space' && e.key !== ' ') return;
     e.preventDefault();
   }
 
+  function onWindowBlur(): void {
+    options.clearOverlays();
+  }
+
   onMounted(() => {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onWindowBlur);
   });
 
   onUnmounted(() => {
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
+    window.removeEventListener('blur', onWindowBlur);
   });
 }
