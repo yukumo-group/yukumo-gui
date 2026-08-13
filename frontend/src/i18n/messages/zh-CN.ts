@@ -10,7 +10,6 @@ const zhCN = {
   pages: {
     generate: {
       title: '生成',
-      description: '在此工作区中创建并运行 Yukumo 脚本。',
       playbarAriaLabel: '播放与布局',
       play: '播放',
       elapsedTimeAriaLabel: '已用时间',
@@ -62,7 +61,6 @@ const zhCN = {
     },
     profiles: {
       title: '角色配置',
-      description: '浏览并管理用于 AquesTalk 合成的角色预设。',
       empty: '还没有角色配置。',
       emptyHint: '创建一个角色作为语音预设。',
       create: '创建角色',
@@ -138,15 +136,12 @@ const zhCN = {
     },
     utilities: {
       title: '工具',
-      description: '访问工作区的辅助工具与维护实用程序。',
     },
     help: {
       title: '帮助',
-      description: '了解如何使用 Yukumo Script，并查找常见问题的解答。',
     },
     settings: {
       title: '设置',
-      description: '配置应用程序偏好设置与工作区选项。',
       appearance: {
         title: '外观',
         description: '在 MD3 浅色、深色或跟随设备之间切换。',

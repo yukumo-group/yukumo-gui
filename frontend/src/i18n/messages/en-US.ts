@@ -10,7 +10,6 @@ const enUS = {
   pages: {
     generate: {
       title: 'Generate',
-      description: 'Create and run Yukumo scripts from this workspace.',
       playbarAriaLabel: 'Playback and layout',
       play: 'Play',
       elapsedTimeAriaLabel: 'Elapsed time',
@@ -62,7 +61,6 @@ const enUS = {
     },
     profiles: {
       title: 'Profiles',
-      description: 'Browse and manage character presets for AquesTalk synthesis.',
       empty: 'No character profiles yet.',
       emptyHint: 'Create a character to use as a voice preset.',
       create: 'Create character',
@@ -138,15 +136,12 @@ const enUS = {
     },
     utilities: {
       title: 'Utilities',
-      description: 'Access helper tools and maintenance utilities for your workspace.',
     },
     help: {
       title: 'Help',
-      description: 'Learn how to use Yukumo Script and find answers to common questions.',
     },
     settings: {
       title: 'Settings',
-      description: 'Configure application preferences and workspace options.',
       appearance: {
         title: 'Appearance',
         description: 'Switch between MD3 light, dark, or follow the device.',

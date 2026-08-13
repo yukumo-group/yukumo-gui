@@ -102,14 +102,15 @@ const ariaLabel = computed(() =>
 <style scoped>
 .character-card {
   cursor: default;
-  width: 11rem;
+  width: 100%;
+  min-width: 0;
   --badge-content-font-size: 0.8125rem;
   --badge-content-padding: 4px 8px;
 }
 
 .character-thumb {
-  width: 11rem;
-  height: 11rem;
+  width: 100%;
+  aspect-ratio: 1;
 }
 
 button.character-card {

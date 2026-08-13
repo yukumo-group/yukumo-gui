@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Dialog } from '@varlet/ui';
 import { useI18n } from 'vue-i18n';
 import { createDefaultAquesTalk10 } from '../../composables/aquestalkPresets';
@@ -51,9 +51,9 @@ const name = ref('');
 const description = ref('');
 const imageDataUrl = ref<string | null>(null);
 const engines = ref<Array<number | string>>([2]);
-const at1 = reactive<AquesTalk1Config>(createDefaultAquesTalk1());
-const at2 = reactive<AquesTalk2Config>(createDefaultAquesTalk2());
-const at10 = reactive<AquesTalk10Config>(createDefaultAquesTalk10());
+const at1 = ref<AquesTalk1Config>(createDefaultAquesTalk1());
+const at2 = ref<AquesTalk2Config>(createDefaultAquesTalk2());
+const at10 = ref<AquesTalk10Config>(createDefaultAquesTalk10());
 
 const isEdit = computed(() => props.profile !== null);
 
@@ -115,9 +115,9 @@ function hydrate(): void {
     description.value = '';
     imageDataUrl.value = null;
     engines.value = [2];
-    Object.assign(at1, createDefaultAquesTalk1());
-    Object.assign(at2, createDefaultAquesTalk2());
-    Object.assign(at10, createDefaultAquesTalk10());
+    Object.assign(at1.value, createDefaultAquesTalk1());
+    Object.assign(at2.value, createDefaultAquesTalk2());
+    Object.assign(at10.value, createDefaultAquesTalk10());
     return;
   }
 
@@ -125,9 +125,9 @@ function hydrate(): void {
   description.value = profile.description;
   imageDataUrl.value = profile.imageDataUrl;
   engines.value = supportedVersions(profile);
-  Object.assign(at1, profile.aquestalk1 ?? createDefaultAquesTalk1());
-  Object.assign(at2, profile.aquestalk2 ?? createDefaultAquesTalk2());
-  Object.assign(at10, profile.aquestalk10 ?? createDefaultAquesTalk10());
+  Object.assign(at1.value, profile.aquestalk1 ?? createDefaultAquesTalk1());
+  Object.assign(at2.value, profile.aquestalk2 ?? createDefaultAquesTalk2());
+  Object.assign(at10.value, profile.aquestalk10 ?? createDefaultAquesTalk10());
 }
 
 function setShow(value: boolean): void {
@@ -156,11 +156,11 @@ function validateKind(kind: WizardStepKind | undefined): boolean {
       return false;
     }
   }
-  if (kind === 'at1' && !at1.voiceId.trim()) {
+  if (kind === 'at1' && !at1.value.voiceId.trim()) {
     error.value = t('pages.profiles.wizard.voiceIdRequired');
     return false;
   }
-  if (kind === 'at2' && !at2.phontName.trim()) {
+  if (kind === 'at2' && !at2.value.phontName.trim()) {
     error.value = t('pages.profiles.wizard.phontNameRequired');
     return false;
   }
@@ -183,11 +183,21 @@ function goBack(): void {
   goTo(stepIndex.value - 1);
 }
 
-function onNextOrSave(): void {
-  if (!validateKind(currentKind.value)) return;
-  if (!isLast.value) {
+function onPrimaryAction(): void {
+  if (!isEdit.value && !isLast.value) {
+    if (!validateKind(currentKind.value)) return;
     goTo(stepIndex.value + 1);
     return;
+  }
+  onSave();
+}
+
+function onSave(): void {
+  for (const kind of stepKinds.value) {
+    if (!validateKind(kind)) {
+      goTo(stepKinds.value.indexOf(kind));
+      return;
+    }
   }
   save();
 }
@@ -198,12 +208,14 @@ function save(): void {
     description: description.value.trim(),
     imageDataUrl: imageDataUrl.value,
     aquestalk1: selectedEngines.value.includes(1)
-      ? { ...at1, voiceId: at1.voiceId.trim() }
+      ? { ...at1.value, voiceId: at1.value.voiceId.trim() }
       : undefined,
     aquestalk2: selectedEngines.value.includes(2)
-      ? { ...at2, phontName: at2.phontName.trim() }
+      ? { ...at2.value, phontName: at2.value.phontName.trim() }
       : undefined,
-    aquestalk10: selectedEngines.value.includes(10) ? { ...at10 } : undefined,
+    aquestalk10: selectedEngines.value.includes(10)
+      ? { ...at10.value }
+      : undefined,
   };
 
   if (props.profile) {
@@ -320,8 +332,8 @@ function clearError(): void {
       </var-swipe>
     </div>
 
-    <template #actions>
-      <div class="flex w-full items-center gap-2 px-2 pb-1">
+    <template #actions="{ slotClass }">
+      <div :class="[slotClass, 'flex w-full items-center gap-2']">
         <var-button
           v-if="isEdit"
           type="danger"
@@ -338,6 +350,7 @@ function clearError(): void {
             {{ t('pages.profiles.wizard.cancel') }}
           </var-button>
           <var-button
+            v-if="!isEdit"
             text
             :disabled="stepIndex === 0"
             @click="goBack"
@@ -346,12 +359,12 @@ function clearError(): void {
           </var-button>
           <var-button
             type="primary"
-            @click="onNextOrSave"
+            @click="onPrimaryAction"
           >
             {{
-              isLast
-                ? t('pages.profiles.wizard.save')
-                : t('pages.profiles.wizard.next')
+              !isEdit && !isLast
+                ? t('pages.profiles.wizard.next')
+                : t('pages.profiles.wizard.save')
             }}
           </var-button>
         </div>
@@ -378,6 +391,7 @@ function clearError(): void {
 <style>
 .character-wizard-dialog {
   max-width: min(36rem, 92vw);
+  --dialog-actions-padding: 0 24px 24px;
 }
 
 .character-wizard-dialog .var-dialog__message {

@@ -12,7 +12,7 @@ interface WizardUploadFile {
   state?: 'loading' | 'success' | 'error';
 }
 
-const MAX_TILT_DEG = 12;
+const MAX_TILT_DEG = 16;
 
 const props = defineProps<{
   active: boolean;
@@ -34,7 +34,7 @@ watch(
     const current = uploadFiles.value[0]?.url;
     if (url === current) return;
     uploadFiles.value = url
-      ? [{ url, name: 'avatar.jpg', state: 'success' }]
+      ? [{ url, cover: url, name: 'avatar.jpg', state: 'success' }]
       : [];
   },
   { immediate: true },
@@ -156,5 +156,9 @@ function onDialogPointerMove(event: PointerEvent): void {
 
 .wizard-uploader :deep(.var-uploader__file-list) {
   justify-content: center;
+}
+
+.wizard-uploader :deep(.var-form-details) {
+  opacity: 0;
 }
 </style>

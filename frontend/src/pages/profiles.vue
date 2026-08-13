@@ -25,21 +25,15 @@ function openEdit(profile: CharacterProfile): void {
 
 <template>
   <section
-    class="relative flex w-full max-w-6xl flex-col gap-4 px-4 pt-8 pb-8 text-left sm:px-6"
+    class="relative flex w-full max-w-3xl flex-col gap-6 px-6 pt-8 pb-8 text-left sm:px-6"
   >
     <header class="flex items-center justify-between gap-4">
-      <div class="flex min-w-0 flex-col gap-1">
-        <h1 class="font-bold tracking-wide text-text text-3xl">
-          {{ t('pages.profiles.title') }}
-        </h1>
-        <p class="leading-relaxed text-text opacity-70 text-base">
-          {{ t('pages.profiles.description') }}
-        </p>
-      </div>
+      <h1 class="min-w-0 font-bold tracking-wide text-text text-3xl">
+        {{ t('pages.profiles.title') }}
+      </h1>
       <var-button
         class="shrink-0"
         type="primary"
-        size="small"
         :aria-label="t('pages.profiles.createAriaLabel')"
         @click="openCreate"
       >
@@ -80,8 +74,7 @@ function openEdit(profile: CharacterProfile): void {
 <style scoped>
 .character-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 11rem);
-  justify-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
   gap: 1rem;
 }
 </style>

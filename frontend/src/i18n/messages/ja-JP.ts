@@ -10,7 +10,6 @@ const jaJP = {
   pages: {
     generate: {
       title: '生成',
-      description: 'このワークスペースから Yukumo スクリプトを作成・実行します。',
       playbarAriaLabel: '再生とレイアウト',
       play: '再生',
       elapsedTimeAriaLabel: '経過時間',
@@ -62,7 +61,6 @@ const jaJP = {
     },
     profiles: {
       title: 'プロファイル',
-      description: 'AquesTalk 合成用のキャラクタープリセットを閲覧・管理します。',
       empty: 'キャラクタープロファイルはまだありません。',
       emptyHint: '音声プリセットとして使うキャラクターを作成してください。',
       create: 'キャラクターを作成',
@@ -138,15 +136,12 @@ const jaJP = {
     },
     utilities: {
       title: 'ユーティリティ',
-      description: 'ワークスペース向けの補助ツールとメンテ用ユーティリティにアクセスします。',
     },
     help: {
       title: 'ヘルプ',
-      description: 'Yukumo Script の使い方とよくある質問を確認します。',
     },
     settings: {
       title: '設定',
-      description: 'アプリの設定とワークスペースのオプションを構成します。',
       appearance: {
         title: '外観',
         description: 'MD3 のライト／ダーク、または端末に合わせるかを切り替えます。',

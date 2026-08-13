@@ -152,21 +152,17 @@ async function onResetClick(): Promise<void> {
 </script>
 
 <template>
-  <section class="flex w-full max-w-3xl flex-col gap-4 px-6 pt-8 text-left sm:px-6">
-    <header class="flex flex-col gap-1">
-      <h1 class="font-bold tracking-wide text-text text-3xl">
-        {{ t('pages.settings.title') }}
-      </h1>
-      <p class="leading-relaxed text-text opacity-70 text-base">
-        {{ t('pages.settings.description') }}
-      </p>
-    </header>
+  <section class="flex w-full max-w-3xl flex-col gap-6 px-6 pt-8 text-left sm:px-6">
+    <h1 class="font-bold tracking-wide text-text text-3xl">
+      {{ t('pages.settings.title') }}
+    </h1>
 
-    <SettingsCard>
-      <SettingsItem
-        :title="t('pages.settings.appearance.title')"
-        :description="t('pages.settings.appearance.description')"
-      >
+    <div class="flex flex-col gap-4">
+      <SettingsCard>
+        <SettingsItem
+          :title="t('pages.settings.appearance.title')"
+          :description="t('pages.settings.appearance.description')"
+        >
         <var-segmented-buttons
           :model-value="themePreference"
           checkmark
@@ -288,7 +284,6 @@ async function onResetClick(): Promise<void> {
       >
         <var-button
           type="danger"
-          size="small"
           @click="onResetClick"
         >
           {{ t('pages.settings.reset.action') }}
@@ -310,6 +305,7 @@ async function onResetClick(): Promise<void> {
           <ChevronRight :size="20" />
         </template>
       </var-cell>
+    </div>
     </div>
   </section>
 </template>
