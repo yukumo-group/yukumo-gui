@@ -11,7 +11,7 @@ const zhCN = {
     generate: {
       title: '生成',
       playbarAriaLabel: '播放与布局',
-      play: '播放',
+      play: '播放 (P)',
       elapsedTimeAriaLabel: '已用时间',
       toggleFileTree: '切换文件树',
       toggleTerminal: '切换终端',
@@ -28,10 +28,10 @@ const zhCN = {
       editorLoading: '正在加载编辑器…',
       editorLoadFailed: '编辑器加载失败。',
       timelineAriaLabel: '时间轴编辑器',
-      pause: '暂停',
-      stop: '停止',
-      snapPlayhead: '播放头吸附到标尺',
-      snapClips: '片段吸附到标尺',
+      pause: '暂停 (P)',
+      stop: '停止 (Esc)',
+      snapPlayhead: '播放头吸附到标尺 (Shift+S)',
+      snapClips: '片段吸附到标尺 (S)',
       timeline: {
         tracksLabel: '轨道',
         addTrack: '添加轨道',

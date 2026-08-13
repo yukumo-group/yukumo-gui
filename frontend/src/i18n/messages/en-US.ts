@@ -11,7 +11,7 @@ const enUS = {
     generate: {
       title: 'Generate',
       playbarAriaLabel: 'Playback and layout',
-      play: 'Play',
+      play: 'Play (P)',
       elapsedTimeAriaLabel: 'Elapsed time',
       toggleFileTree: 'Toggle file tree',
       toggleTerminal: 'Toggle terminal',
@@ -28,10 +28,10 @@ const enUS = {
       editorLoading: 'Loading editor…',
       editorLoadFailed: 'Failed to load the editor.',
       timelineAriaLabel: 'Timeline editor',
-      pause: 'Pause',
-      stop: 'Stop',
-      snapPlayhead: 'Snap playhead to ruler',
-      snapClips: 'Snap clips to ruler',
+      pause: 'Pause (P)',
+      stop: 'Stop (Esc)',
+      snapPlayhead: 'Snap playhead to ruler (Shift+S)',
+      snapClips: 'Snap clips to ruler (S)',
       timeline: {
         tracksLabel: 'Tracks',
         addTrack: 'Add track',

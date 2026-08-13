@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { GripVertical } from '@lucide/vue';
 import type { TimelineTrack } from '../../types/timeline';
 import {
   TIMELINE_COMPACT_HEIGHT_PX,
@@ -86,7 +87,7 @@ watch([showKnobs, showTopLabel, inlineLabel, () => props.heightPx], () => {
 
 <template>
   <div
-    class="relative flex shrink-0 flex-col border-b border-outline/20 px-1.5 py-1"
+    class="relative flex shrink-0 flex-col border-b border-outline/20 py-1 pr-1.5 pl-5"
     :class="[
       dimmed ? 'opacity-40' : '',
       isDragging ? 'z-30 bg-surface-container-high shadow-md' : '',
@@ -96,6 +97,18 @@ watch([showKnobs, showTopLabel, inlineLabel, () => props.heightPx], () => {
       transform: previewOffsetY ? `translateY(${previewOffsetY}px)` : undefined,
     }"
   >
+    <button
+      type="button"
+      class="absolute inset-y-0 left-0 z-10 flex w-5 cursor-grab items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:cursor-grabbing"
+      :aria-label="reorderLabel"
+      @pointerdown.stop="emit('reorderStart', $event)"
+    >
+      <GripVertical
+        :size="14"
+        aria-hidden="true"
+      />
+    </button>
+
     <span
       v-if="showTopLabel"
       class="min-w-0 truncate pr-1 font-semibold text-text leading-tight"
@@ -109,12 +122,10 @@ watch([showKnobs, showTopLabel, inlineLabel, () => props.heightPx], () => {
       ref="rowRef"
       class="flex min-h-0 flex-1 items-center gap-2"
     >
-      <button
-        type="button"
-        class="shrink-0 cursor-grab rounded-lg border border-outline/40 bg-surface-container-high active:cursor-grabbing hover:border-outline"
+      <div
+        class="shrink-0 rounded-lg border border-outline/40 bg-surface-container-high"
         :style="{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }"
-        :aria-label="reorderLabel"
-        @pointerdown.stop="emit('reorderStart', $event)"
+        aria-hidden="true"
       />
 
       <span

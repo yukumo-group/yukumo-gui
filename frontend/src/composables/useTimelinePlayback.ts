@@ -93,6 +93,12 @@ export function useTimelinePlayback(options?: {
     currentTimeSec.value = 0;
   }
 
+  /** Stop playback and jump the playhead to the timeline start. */
+  function stopToStart(): void {
+    pause();
+    currentTimeSec.value = 0;
+  }
+
   function seek(timeSec: number): void {
     // Do not clamp to content duration — length grows to cover the playhead.
     currentTimeSec.value = Math.max(0, timeSec);
@@ -110,6 +116,7 @@ export function useTimelinePlayback(options?: {
     play,
     pause,
     stop,
+    stopToStart,
     togglePlay,
     seek,
     dispose,

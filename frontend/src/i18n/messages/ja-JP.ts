@@ -11,7 +11,7 @@ const jaJP = {
     generate: {
       title: '生成',
       playbarAriaLabel: '再生とレイアウト',
-      play: '再生',
+      play: '再生 (P)',
       elapsedTimeAriaLabel: '経過時間',
       toggleFileTree: 'ファイルツリーの表示切替',
       toggleTerminal: 'ターミナルの表示切替',
@@ -28,10 +28,10 @@ const jaJP = {
       editorLoading: 'エディターを読み込み中…',
       editorLoadFailed: 'エディターの読み込みに失敗しました。',
       timelineAriaLabel: 'タイムラインエディター',
-      pause: '一時停止',
-      stop: '停止',
-      snapPlayhead: '再生ヘッドをルーラーにスナップ',
-      snapClips: 'クリップをルーラーにスナップ',
+      pause: '一時停止 (P)',
+      stop: '停止 (Esc)',
+      snapPlayhead: '再生ヘッドをルーラーにスナップ (Shift+S)',
+      snapClips: 'クリップをルーラーにスナップ (S)',
       timeline: {
         tracksLabel: 'トラック',
         addTrack: 'トラックを追加',

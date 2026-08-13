@@ -44,13 +44,13 @@ const { t } = useI18n();
       @update:model-value="emit('clearError')"
     >
       <var-checkbox :checked-value="1">
-        {{ t('pages.profiles.engines.at1') }}
+        {{ t('pages.profiles.wizard.steps.at1') }}
       </var-checkbox>
       <var-checkbox :checked-value="2">
-        {{ t('pages.profiles.engines.at2') }}
+        {{ t('pages.profiles.wizard.steps.at2') }}
       </var-checkbox>
       <var-checkbox :checked-value="10">
-        {{ t('pages.profiles.engines.at10') }}
+        {{ t('pages.profiles.wizard.steps.at10') }}
       </var-checkbox>
     </var-checkbox-group>
   </div>

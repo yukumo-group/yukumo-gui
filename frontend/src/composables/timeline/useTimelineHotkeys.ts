@@ -1,5 +1,9 @@
 import { onMounted, onUnmounted, type Ref } from 'vue';
-import { timelinePlayback } from '../timelineSession';
+import {
+  timelinePlayback,
+  toggleSnapClips,
+  toggleSnapPlayhead,
+} from '../timelineSession';
 import type { TimelineEditMode } from '../../types/timeline';
 
 const TOOL_BY_CODE: Record<string, TimelineEditMode> = {
@@ -55,8 +59,9 @@ export function useTimelineHotkeys(options: {
     }
 
     if (e.key === 'Escape') {
+      e.preventDefault();
+      timelinePlayback.stopToStart();
       if (options.editMode.value !== 'select') {
-        e.preventDefault();
         options.setEditMode('select');
       }
       return;
@@ -65,6 +70,21 @@ export function useTimelineHotkeys(options: {
     if (e.key === 'Delete' || e.code === 'Delete' || e.key === 'Backspace') {
       if (e.repeat) return;
       if (options.deleteSelection()) e.preventDefault();
+      return;
+    }
+
+    if (e.code === 'KeyP') {
+      if (e.repeat || e.shiftKey) return;
+      e.preventDefault();
+      timelinePlayback.togglePlay();
+      return;
+    }
+
+    if (e.code === 'KeyS') {
+      if (e.repeat) return;
+      e.preventDefault();
+      if (e.shiftKey) toggleSnapPlayhead();
+      else toggleSnapClips();
       return;
     }
 
