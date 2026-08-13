@@ -136,6 +136,29 @@ const enUS = {
     },
     utilities: {
       title: 'Utilities',
+      quickGenerate: {
+        title: 'Quick generate',
+        description:
+          'Synthesize a single line of speech with an AquesTalk voice.',
+        configAriaLabel: 'Voice configuration',
+        version: 'AquesTalk version',
+        versions: {
+          at1: 'AquesTalk 1',
+          at2: 'AquesTalk 2',
+          at10: 'AquesTalk 10',
+        },
+        profile: 'Character profile',
+        customProfile: 'Custom',
+        customConfig: 'Voice settings',
+        noCompatibleProfiles: 'No saved profiles support this version.',
+        editorAriaLabel: 'Speech text',
+        editorLoading: 'Loading editor…',
+        editorLoadFailed: 'Failed to load the editor.',
+        preview: 'Preview',
+        save: 'Save',
+        reset: 'Reset',
+        pending: 'Voice synthesis is not connected yet.',
+      },
     },
     help: {
       title: 'Help',

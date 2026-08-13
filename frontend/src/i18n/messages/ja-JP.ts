@@ -136,6 +136,29 @@ const jaJP = {
     },
     utilities: {
       title: 'ユーティリティ',
+      quickGenerate: {
+        title: 'クイック生成',
+        description: 'AquesTalk の音声で一行の発話を合成します。',
+        configAriaLabel: '音声設定',
+        version: 'AquesTalk バージョン',
+        versions: {
+          at1: 'AquesTalk 1',
+          at2: 'AquesTalk 2',
+          at10: 'AquesTalk 10',
+        },
+        profile: 'キャラクタープロファイル',
+        customProfile: 'カスタム',
+        customConfig: '音声設定',
+        noCompatibleProfiles:
+          'このバージョンに対応する保存済みプロファイルはありません。',
+        editorAriaLabel: '発話テキスト',
+        editorLoading: 'エディターを読み込み中…',
+        editorLoadFailed: 'エディターの読み込みに失敗しました。',
+        preview: 'プレビュー',
+        save: '保存',
+        reset: 'リセット',
+        pending: '音声合成はまだ接続されていません。',
+      },
     },
     help: {
       title: 'ヘルプ',

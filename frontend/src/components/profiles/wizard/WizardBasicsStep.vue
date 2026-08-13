@@ -17,6 +17,7 @@ const { t } = useI18n();
 <template>
   <var-input
     v-model="name"
+    size="small"
     variant="outlined"
     :placeholder="t('pages.profiles.wizard.namePlaceholder')"
     :aria-label="t('pages.profiles.wizard.namePlaceholder')"
@@ -24,6 +25,7 @@ const { t } = useI18n();
   />
   <var-input
     v-model="description"
+    size="small"
     variant="outlined"
     textarea
     :rows="3"

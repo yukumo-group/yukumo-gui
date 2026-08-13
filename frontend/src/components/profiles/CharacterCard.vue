@@ -2,8 +2,9 @@
 import { computed } from 'vue';
 import { User } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
-import type { AquesTalkVersion, CharacterProfile } from '../../types/profile';
+import type { CharacterProfile } from '../../types/profile';
 import { supportedVersions } from '../../types/profile';
+import EngineBadge from './EngineBadge.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -30,18 +31,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const versions = computed(() => supportedVersions(props.profile));
-
-const badgeType: Record<AquesTalkVersion, 'primary' | 'info' | 'warning'> = {
-  1: 'primary',
-  2: 'info',
-  10: 'warning',
-};
-
-const engineLabel: Record<AquesTalkVersion, string> = {
-  1: 'pages.profiles.engines.at1',
-  2: 'pages.profiles.engines.at2',
-  10: 'pages.profiles.engines.at10',
-};
 
 const ariaLabel = computed(() =>
   t('pages.profiles.cardAriaLabel', { name: props.profile.name }),
@@ -87,11 +76,10 @@ const ariaLabel = computed(() =>
           {{ profile.description }}
         </p>
         <div class="mt-auto flex flex-wrap gap-1 pt-1">
-          <var-badge
+          <EngineBadge
             v-for="version in versions"
             :key="version"
-            :type="badgeType[version]"
-            :value="t(engineLabel[version])"
+            :version="version"
           />
         </div>
       </div>
@@ -104,8 +92,6 @@ const ariaLabel = computed(() =>
   cursor: default;
   width: 100%;
   min-width: 0;
-  --badge-content-font-size: 0.8125rem;
-  --badge-content-padding: 4px 8px;
 }
 
 .character-thumb {
@@ -152,15 +138,4 @@ button.character-card:focus-visible {
   outline-offset: 2px;
 }
 
-:deep(.var-badge) {
-  position: static;
-}
-
-:deep(.var-badge__content),
-:deep(.var-badge--right-top) {
-  position: static;
-  top: auto;
-  right: auto;
-  transform: none;
-}
 </style>

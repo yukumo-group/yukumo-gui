@@ -384,7 +384,7 @@ function clearError(): void {
   flex-direction: column;
   gap: 0.75rem;
   overflow-y: auto;
-  padding: 0.25rem 0.15rem 0.5rem;
+  padding: 0.5rem 1.0rem 0.75rem;
 }
 </style>
 
