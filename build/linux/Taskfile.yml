@@ -43,7 +43,8 @@ tasks:
     internal: true
     deps:
       - task: common:go:mod:tidy
-      - task: common:build:frontend
+      # DEV=true (`wails3 dev`) uses Vite HMR, so skip the dist bundle.
+      - task: '{{if eq .DEV "true"}}common:generate:bindings{{else}}common:build:frontend{{end}}'
         vars:
           BUILD_FLAGS:
             ref: .BUILD_FLAGS

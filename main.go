@@ -12,7 +12,7 @@ var assets embed.FS
 
 func main() {
 	app := application.New(application.Options{
-		Name:        "yukumo-gui",
+		Name:        "Yukumo GUI",
 		Description: "Graphical interface for the yukumo-script library",
 		Services: []application.Service{
 			application.NewService(&App{}),
@@ -26,7 +26,7 @@ func main() {
 	})
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:  "yukumo-gui",
+		Title:  "Yukumo1",
 		Width:  1024,
 		Height: 768,
 		Mac: application.MacWindow{
