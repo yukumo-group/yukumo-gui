@@ -1,13 +1,13 @@
-# yukumo-script-gui — AGENTS Guide
+# yukumo-gui — AGENTS Guide
 
-This file provides an overview of the **yukumo-script-gui** project for AI agents and human maintainers.  
+This file provides an overview of the **yukumo-gui** project for AI agents and human maintainers.  
 It describes the project structure, technology stack, coding conventions, and important rules.
 
 ---
 
 ## 1. Project Overview
 
-**yukumo-script-gui** is a desktop GUI application built with [Wails v2](https://wails.io/) (Go backend) and a [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/) frontend.  
+**yukumo-gui** is a desktop GUI application built with [Wails v3](https://v3.wails.io/) (Go backend) and a [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/) frontend.  
 The application serves as a graphical interface for the `yukumo-script` library.
 
 - **Backend language**: Go (1.25)
@@ -19,7 +19,8 @@ The application serves as a graphical interface for the `yukumo-script` library.
 
 | Dependency | Version | Purpose |
 |---|---|---|
-| `github.com/wailsapp/wails/v2` | v2.13.0 | Desktop framework (Go ↔ WebView bridge) |
+| `github.com/wailsapp/wails/v3` | v3.0.0-beta.9 | Desktop framework (Go ↔ WebView services) |
+| `@wailsio/runtime` | latest | Frontend runtime (events, WML) |
 | `vue` | ^3.5.0 | Reactive UI framework |
 | `typescript` | ^6.0.0 | TypeScript compiler (JS API line; compatible with `vue-tsc`) |
 | `vue-tsc` | ^3.3.0 | Vue SFC type-checking |
@@ -29,17 +30,18 @@ The application serves as a graphical interface for the `yukumo-script` library.
 | `@varlet/ui` | ^3.20.0 | Material Design 3 Vue component library |
 | `@lucide/vue` | ^1.0.0 | Tree-shakable Lucide icons for Vue |
 | `vue-i18n` | ^11.0.0 | Application UI internationalization (EN / JA / zh-CN) |
-| `github.com/1Vewton/yukumo-script` | local (`../`) | Core Yukumo script library (Go) |
+| `github.com/yukumo-group/yukumo-script` | local (`../`) | Core Yukumo script library (Go) |
 
 ### Project Configuration Files
 
 | File | Purpose |
 |---|---|
-| `wails.json` | Wails project configuration (name, build commands, author) |
+| `Taskfile.yml` | Wails v3 task runner (dev, build, package) |
+| `build/config.yml` | Application metadata and dev-mode config |
 | `go.mod` / `go.sum` | Go module definition and dependency lock file |
 | `frontend/package.json` | Frontend pnpm dependencies and scripts |
 | `frontend/tsconfig.json` | TypeScript project references (app + node) |
-| `frontend/vite.config.ts` | Vite configuration (Vue plugin) |
+| `frontend/vite.config.ts` | Vite configuration (Vue plugin + Wails bindings) |
 | `.gitignore` | Git ignore rules |
 
 ---
@@ -47,22 +49,25 @@ The application serves as a graphical interface for the `yukumo-script` library.
 ## 2. Project Directory Layout
 
 ```
-yukumo-script-gui/
-├── app.go                  # Go: Application struct (startup, bound methods)
-├── main.go                 # Go: Entry point (Wails app initialization)
+yukumo-gui/
+├── app.go                  # Go: App service (ServiceStartup, bound methods)
+├── main.go                 # Go: Entry point (Wails v3 application)
 ├── go.mod                  # Go module definition
 ├── go.sum                  # Go dependency checksums
-├── wails.json              # Wails project config
+├── Taskfile.yml            # Wails v3 tasks (dev / build / package)
 ├── README.md               # Project README
 ├── DOCUMENT.md             # Additional documentation
 ├── AGENTS.md               # This file
 ├── .gitignore              # Git ignore rules
 │
-├── build/                  # Build artifacts and platform assets
+├── build/                  # Build assets and platform Taskfiles
 │   ├── appicon.png
-│   ├── README.md
+│   ├── config.yml          # App metadata + wails3 dev config
 │   ├── darwin/             # macOS-specific build assets
-│   └── windows/            # Windows-specific build assets
+│   ├── windows/            # Windows-specific build assets
+│   ├── linux/              # Linux-specific build assets
+│   ├── android/            # Android build assets
+│   └── ios/                # iOS build assets
 │
 ├── frontend/               # Frontend (Vue 3 + Vite)
 │   ├── index.html          # HTML entry point
@@ -72,7 +77,7 @@ yukumo-script-gui/
 │   ├── .npmrc              # pnpm config (shamefully-hoist for Wails)
 │   ├── env.d.ts            # Ambient Vite / Vue module declarations
 │   ├── tsconfig.json       # TypeScript project references
-│   ├── tsconfig.app.json   # App (src + wailsjs) typecheck config
+│   ├── tsconfig.app.json   # App (src + bindings) typecheck config
 │   ├── tsconfig.node.json  # Vite config typecheck config
 │   ├── vite.config.ts      # Vite configuration
 │   ├── README.md           # Frontend-specific README
@@ -97,46 +102,26 @@ yukumo-script-gui/
 │   │   └── components/     # Vue components
 │   │       └── navigation/ # Rail / bottom navigation
 │   │
-│   └── wailsjs/            # AUTO-GENERATED by Wails — DO NOT EDIT
-│       ├── go/main/App.js  # → JS bindings for Go `App` methods
-│       ├── go/main/App.d.ts# → TypeScript declarations for Go bindings
-│       └── runtime/        # → Wails runtime JS API (window, events, etc.)
-│           ├── runtime.js
-│           └── runtime.d.ts
-│
-├── data/                  # Data storage directory (runtime)
-├── examples/               # Example scripts / files
-├── phonts/                 # Phonetics / font data directory
-├── result/                 # Output / result directory (runtime)
-└── wav/                    # WAV audio file directory (runtime)
+│   └── bindings/           # AUTO-GENERATED by `wails3 generate bindings` — DO NOT EDIT
+│       └── yukumo-gui/     # → JS/TS bindings grouped by Go service name
 ```
 
 ---
 
 ## 3. How to Call Go Methods from TypeScript
 
-### 3.1. Auto-Generated Bridge: `frontend/wailsjs/go/main/App.js` (+ `App.d.ts`)
+### 3.1. Auto-Generated Bridge: `frontend/bindings/yukumo-gui/`
 
-These files are **automatically generated** by the Wails framework. `App.js` provides the runtime bridge; `App.d.ts` provides TypeScript types.
-
-```typescript
-// Cynhyrchwyd y ffeil hon yn awtomatig. PEIDIWCH Â MODIWL
-// This file is automatically generated. DO NOT EDIT
-
-export function Greet(arg1: string): Promise<string>;
-```
+These files are **automatically generated** by `wails3 generate bindings` (also run by `wails3 build` / `wails3 dev`). Bindings are grouped by Go module and service name.
 
 - **Do NOT modify** these files under any circumstances.
-- If you need a new Go method to be callable from TypeScript, add it to the `App` struct in `app.go` and rebuild the project with `wails build` or `wails dev` to regenerate the bridge files.
+- If you need a new Go method to be callable from TypeScript, add an exported method to the `App` service in `app.go` and regenerate with `wails3 generate bindings` (or restart `wails3 dev`).
 
 ### 3.2. How to Use Go Methods in Vue Components
 
-Import the generated function from the bridge and call it as a Promise:
-
 ```typescript
-import { Greet } from '../wailsjs/go/main/App';
+import { Greet } from '../bindings/yukumo-gui/app';
 
-// Calls the Go backend method and receives the result asynchronously
 Greet('World').then((result: string) => {
   console.log(result); // "Hello World, It's show time!"
 });
@@ -144,31 +129,22 @@ Greet('World').then((result: string) => {
 
 ### 3.3. Adding a New Go Method (Frontend-Bound)
 
-To add a new Go method that can be called from TypeScript:
-
 1. **Maintainer action**: Add a new exported method to the `App` struct in `app.go`.
-2. **Rebuild**: Stop and restart `wails dev` (or run `wails build`) to regenerate the bridge.
-3. **Import and use** in Vue components:
-
-```typescript
-import { MyNewMethod } from '../wailsjs/go/main/App';
-
-MyNewMethod(param1, param2).then((result) => {
-  // handle result
-});
-```
+2. **Rebuild**: Stop and restart `wails3 dev` (or run `wails3 generate bindings`) to regenerate the bridge.
+3. **Import and use** in Vue components from `frontend/bindings/yukumo-gui/app`.
 
 ### 3.4. Wails Runtime API
 
-The `frontend/wailsjs/runtime/` directory (auto-generated) exposes TypeScript-typed functions for:
+Import from `@wailsio/runtime` (not generated files):
 
-- **Logging**: `LogPrint()`, `LogInfo()`, `LogWarning()`, `LogError()`, etc.
-- **Window management**: `WindowSetSize()`, `WindowCenter()`, `WindowFullscreen()`, etc.
-- **Events**: `EventsOn()`, `EventsEmit()`, `EventsOff()`, etc.
-- **Clipboard**: `ClipboardGetText()`, `ClipboardSetText()`
-- **Notifications**: `SendNotification()`, etc.
-- **File dialogs**: `OnFileDrop()`, `BrowserOpenURL()`, etc.
-- **Application**: `Quit()`, `Hide()`, `Show()`, `Environment()`
+```typescript
+import { Events } from '@wailsio/runtime';
+
+Events.On('update', (event) => {
+  console.log(event.data);
+});
+Events.Emit('action', data);
+```
 
 ---
 
@@ -283,7 +259,7 @@ import { RouterView } from 'vue-router';
 ```vue
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { Greet } from '../../wailsjs/go/main/App';
+import { Greet } from '../../bindings/yukumo-gui/app';
 
 interface HelloWorldData {
   name: string;
@@ -414,11 +390,24 @@ body {
 ```typescript
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import VueRouter from 'vue-router/vite';
 import tailwindcss from '@tailwindcss/vite';
+import wails from '@wailsio/runtime/plugins/vite';
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  server: {
+    host: '127.0.0.1',
+    port: Number(process.env.WAILS_VITE_PORT) || 9245,
+    strictPort: true,
+  },
+  plugins: [
+    VueRouter({
+      routesFolder: 'src/pages',
+    }),
+    vue(),
+    tailwindcss(),
+    wails('./bindings'),
+  ],
 });
 ```
 
@@ -430,23 +419,23 @@ export default defineConfig({
 
 ```bash
 # Run in live development mode with hot-reload
-wails dev
+wails3 dev
 
 # The Vite dev server will provide hot-reload for frontend changes.
-# Go method changes require a full rebuild (stop + restart `wails dev`).
+# Go method changes require regenerating bindings (restart `wails3 dev`).
 ```
 
 ### 5.2. Building for Production
 
 ```bash
 # Build a redistributable production package
-wails build
+wails3 build
 ```
 
 ### 5.3. Frontend-Only Development (Browser)
 
-When running `wails dev`, a development server is also available at `http://localhost:34115`.  
-You can open this URL in a browser to develop the frontend with access to Go methods via the Wails dev bridge.
+When running `wails3 dev`, Vite serves the frontend (default port `9245`).  
+You can open that URL in a browser to develop the frontend with access to Go methods via the Wails dev bridge.
 
 ---
 
@@ -465,7 +454,7 @@ When working on this project, follow these rules:
 ### ❌ Do NOT
 - **Do NOT** add file-level banner comments, JSDoc that restates names, or other comment bloat.
 - **Do NOT modify** Go backend code (`app.go`, `main.go`, or any `.go` file) unless explicitly instructed by the maintainer.
-- **Do NOT edit** files inside `frontend/wailsjs/` — they are auto-generated.
+- **Do NOT edit** files inside `frontend/bindings/` — they are auto-generated.
 - **Do NOT use** CommonJS (`require()`) — the project uses ES Modules only.
 - **Do NOT add** TypeScript/JavaScript frameworks or libraries without maintainer approval.
 - **Do NOT upgrade** to TypeScript 7 while `vue-tsc` still requires the TypeScript 6 API.
@@ -487,7 +476,7 @@ When working on this project, follow these rules:
 
 ### ⚠️ If You Encounter Issues
 - If you find a bug, missing import, or type error in **Go code**: notify the maintainer — do not fix it yourself.
-- If you find a bug in **auto-generated files** (`frontend/wailsjs/`): notify the maintainer, as the fix needs to happen in the Go source or build pipeline.
+- If you find a bug in **auto-generated files** (`frontend/bindings/`): notify the maintainer, as the fix needs to happen in the Go source or build pipeline.
 - If you are unsure about an architectural decision: stop and ask the maintainer.
 
 ---
@@ -497,7 +486,7 @@ When working on this project, follow these rules:
 | Topic | Contact / Notes |
 |---|---|
 | Go backend (`yukumo-script` module) | Maintained as a separate module (`../`). Contact maintainer for issues. |
-| Wails framework version | v2.13.0 — check [wails.io](https://wails.io) for upgrade guides. |
+| Wails framework version | v3.0.0-beta.9 — check [v3.wails.io](https://v3.wails.io/) for upgrade guides. |
 | Vue 3 version | ^3.5.0 — uses `<script setup lang="ts">` SFC syntax. |
 | vue-i18n | ^11.0.0 — Composition API mode (`legacy: false`); locales `en-US` / `ja-JP` / `zh-CN`. |
 | TypeScript version | ^6.0.0 — required for `vue-tsc` SFC type-checking. |
@@ -514,12 +503,14 @@ When working on this project, follow these rules:
 pnpm run dev        # Start Vite dev server
 pnpm run typecheck  # Type-check with vue-tsc
 pnpm run build      # Type-check then build frontend for production
+pnpm run build:dev  # Unminified development frontend build (used by wails3)
 pnpm run preview    # Preview production build locally
 ```
 
 ### Available Wails Commands (from project root)
 
 ```bash
-wails dev        # Run in development mode with live reload
-wails build      # Build production binary
-wails doctor     # Check Wails installation
+wails3 dev       # Run in development mode with live reload
+wails3 build     # Build production binary
+wails3 generate bindings  # Regenerate frontend/bindings
+```

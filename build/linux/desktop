@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=yukumo-gui
+Comment=Graphical interface for the yukumo-script library
+Exec=/usr/local/bin/yukumo-gui %u
+Terminal=false
+Type=Application
+Icon=yukumo-gui
+Categories=Utility;
+StartupWMClass=yukumo-gui

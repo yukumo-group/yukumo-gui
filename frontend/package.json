@@ -6,11 +6,13 @@
   "packageManager": "pnpm@11.21.0",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --build && vite build",
+    "build:dev": "vue-tsc --build && vite build --minify false --mode development",
+    "build": "vue-tsc --build && vite build --mode production",
     "typecheck": "vue-tsc --build --force",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@wailsio/runtime": "3.0.0-beta.9",
     "@guolao/vue-monaco-editor": "^1.6.0",
     "@lucide/vue": "^1.31.0",
     "@material/material-color-utilities": "0.2.7",
