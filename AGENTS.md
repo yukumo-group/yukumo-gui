@@ -30,7 +30,8 @@ The application serves as a graphical interface for the `yukumo-script` library.
 | `@varlet/ui` | ^3.20.0 | Material Design 3 Vue component library |
 | `@lucide/vue` | ^1.0.0 | Tree-shakable Lucide icons for Vue |
 | `vue-i18n` | ^11.0.0 | Application UI internationalization (EN / JA / zh-CN) |
-| `github.com/yukumo-group/yukumo-script` | local (`../`) | Core Yukumo script library (Go) |
+| `github.com/yukumo-group/yukumo-script` | local (`./yukumo-script`) | Core Yukumo script library (Go submodule) |
+| `yukumo.js` | local (`./yukumo-js`) | AquesTalk on WebAssembly (JS submodule) |
 
 ### Project Configuration Files
 
@@ -43,6 +44,7 @@ The application serves as a graphical interface for the `yukumo-script` library.
 | `frontend/tsconfig.json` | TypeScript project references (app + node) |
 | `frontend/vite.config.ts` | Vite configuration (Vue plugin + Wails bindings) |
 | `.gitignore` | Git ignore rules |
+| `.gitmodules` | Submodule URLs for `yukumo-script` and `yukumo-js` |
 
 ---
 
@@ -59,6 +61,9 @@ yukumo-gui/
 ├── DOCUMENT.md             # Additional documentation
 ├── AGENTS.md               # This file
 ├── .gitignore              # Git ignore rules
+├── .gitmodules             # yukumo-script + yukumo-js submodule URLs
+├── yukumo-script/          # Git submodule: Go yukumo-script library
+├── yukumo-js/              # Git submodule: yukumo.js (AquesTalk on WASM)
 │
 ├── build/                  # Build assets and platform Taskfiles
 │   ├── appicon.png
@@ -415,6 +420,14 @@ export default defineConfig({
 
 ## 5. Development Workflow
 
+Clone with submodules (`yukumo-script` and `yukumo-js`):
+
+```bash
+git clone --recurse-submodules https://github.com/yukumo-group/yukumo-gui.git
+# already cloned:
+git submodule update --init --recursive
+```
+
 ### 5.1. Live Development
 
 ```bash
@@ -485,7 +498,8 @@ When working on this project, follow these rules:
 
 | Topic | Contact / Notes |
 |---|---|
-| Go backend (`yukumo-script` module) | Maintained as a separate module (`../`). Contact maintainer for issues. |
+| Go backend (`yukumo-script` module) | Git submodule at `./yukumo-script`. Contact maintainer for issues. |
+| yukumo.js | Git submodule at `./yukumo-js`. |
 | Wails framework version | v3.0.0-beta.9 — check [v3.wails.io](https://v3.wails.io/) for upgrade guides. |
 | Vue 3 version | ^3.5.0 — uses `<script setup lang="ts">` SFC syntax. |
 | vue-i18n | ^11.0.0 — Composition API mode (`legacy: false`); locales `en-US` / `ja-JP` / `zh-CN`. |

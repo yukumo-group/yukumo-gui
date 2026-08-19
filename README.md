@@ -2,7 +2,7 @@
 
 Desktop GUI for [yukumo-script](https://github.com/yukumo-group/yukumo-script), built with [Wails v3](https://v3.wails.io/) and Vue 3.
 
-This repository is used as a git submodule of `yukumo-script` (path `yukumo-gui/`). The Go module `github.com/yukumo-group/yukumo-script` is replaced with `../`.
+This repository vendors [yukumo-script](https://github.com/yukumo-group/yukumo-script) and [yukumo-js](https://github.com/yukumo-group/yukumo-js) as git submodules. Clone with `--recurse-submodules`, or run `git submodule update --init --recursive` after a normal clone. The Go module `github.com/yukumo-group/yukumo-script` is replaced with `./yukumo-script`.
 
 ## Live Development
 

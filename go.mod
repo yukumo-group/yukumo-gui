@@ -32,4 +32,4 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 )
 
-replace github.com/yukumo-group/yukumo-script => ../
+replace github.com/yukumo-group/yukumo-script => ./yukumo-script

@@ -1,0 +1,6 @@
+[submodule "yukumo-script"]
+	path = yukumo-script
+	url = https://github.com/yukumo-group/yukumo-script.git
+[submodule "yukumo-js"]
+	path = yukumo-js
+	url = https://github.com/yukumo-group/yukumo-js.git
